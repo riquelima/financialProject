@@ -5,9 +5,10 @@ import SummaryCard from '../components/SummaryCard';
 import MonthNavigator from '../components/MonthNavigator';
 import FloatingActionButton from '../components/FloatingActionButton';
 import AddTransactionModal from '../components/AddTransactionModal';
-import TransactionListModal from '../components/TransactionListModal'; // Import new modal
-import { PeriodType, Transaction, TransactionType } from '../types'; // Import Transaction and TransactionType
-import { DollarSignIcon, TrendingUpIcon, HomeIcon, BarChart2Icon, COLORS } from '../constants';
+import TransactionListModal from '../components/TransactionListModal'; 
+import ExpensePieChart from '../components/ExpensePieChart'; // Import the new pie chart component
+import { PeriodType, Transaction, TransactionType } from '../types'; 
+import { DollarSignIcon, TrendingUpIcon, HomeIcon, BarChart2Icon, COLORS, PieChartIcon } from '../constants';
 
 const DashboardScreen: React.FC = () => {
   const { activeMonthYear, settings, getMonthlySummary, getCurrentMonthData, getAllTransactionsForMonth } = useAppContext();
@@ -26,10 +27,10 @@ const DashboardScreen: React.FC = () => {
     return getAllTransactionsForMonth(activeMonthYear, TransactionType.INCOME);
   }, [activeMonthYear, getAllTransactionsForMonth, isProventosModalOpen]);
 
-  const expenseTransactions = useMemo(() => {
-    if (!isDebitosModalOpen) return [];
+  // Memoize all expense transactions for the pie chart and the debitos modal
+  const allExpenseTransactions = useMemo(() => {
     return getAllTransactionsForMonth(activeMonthYear, TransactionType.EXPENSE);
-  }, [activeMonthYear, getAllTransactionsForMonth, isDebitosModalOpen]);
+  }, [activeMonthYear, getAllTransactionsForMonth]);
 
   const handleOpenAddTransactionModal = (period: PeriodType) => {
     setModalPeriodType(period);
@@ -102,13 +103,11 @@ const DashboardScreen: React.FC = () => {
         </div>
       )}
       
-      <div className={`bg-${COLORS.cardBackground} p-6 rounded-xl shadow-lg`}>
-          <h3 className={`text-xl font-semibold text-${COLORS.textPrimary} mb-4`}>Acesso Rápido</h3>
-          <p className={`text-${COLORS.textSecondary}`}>
-              Use o botão flutuante (+) para adicionar uma nova transação rapidamente.
-              Navegue para "Meio Mês" ou "Fim Mês" para ver detalhes e gerenciar entradas e saídas específicas de cada período.
-          </p>
-      </div>
+      {/* Replace Acesso Rápido with ExpensePieChart */}
+      <ExpensePieChart 
+        expenseTransactions={allExpenseTransactions}
+        currencySymbol={settings.currencySymbol}
+      />
 
       <FloatingActionButton 
         onClick={() => handleOpenAddTransactionModal(PeriodType.MID_MONTH)}
@@ -134,7 +133,7 @@ const DashboardScreen: React.FC = () => {
         isOpen={isDebitosModalOpen}
         onClose={closeDebitosModal}
         title={`Débitos de ${getMonthName(activeMonthYear)}`}
-        transactions={expenseTransactions}
+        transactions={allExpenseTransactions} // Use allExpenseTransactions for Debitos modal
         currencySymbol={settings.currencySymbol}
         transactionTypeForColor={TransactionType.EXPENSE}
       />

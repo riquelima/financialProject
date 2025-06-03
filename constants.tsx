@@ -84,8 +84,21 @@ export const DownloadCloudIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props
     <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>
   </svg>
 );
+export const PieChartIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+    <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+  </svg>
+);
 
 
 export const APP_NAME = "Controle Financeiro Pessoal";
 
 export const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+export const PIE_CHART_COLORS = [
+  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+  '#E7E9ED', '#80FFAA', '#FF80F1', '#80D4FF', '#FFCC80', '#B380FF',
+  '#FF6B6B', '#4ECDC4', '#F9C74F', '#577590', '#F8961E', '#F94144',
+  '#A0E7E5', '#B4F8C8', '#FBE7C6', '#FFDAB9'
+];
