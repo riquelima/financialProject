@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../hooks/useAppContext';
 import { CogIcon, COLORS } from '../constants';
@@ -22,7 +23,7 @@ const SettingsScreen: React.FC = () => {
     const monthData = getCurrentMonthData(); 
     setOpeningBalance(String(monthData.openingBalance || 0));
     setCreditCardLimit(String(monthData.creditCardLimit || ''));
-  }, [activeMonthYear, getCurrentMonthData]);
+  }, [activeMonthYear, getCurrentMonthData, settings]); // Added settings as a dependency in case currencySymbol changes externally.
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +36,11 @@ const SettingsScreen: React.FC = () => {
       openingBalance: numOpeningBalance, 
       creditCardLimit: numCreditCardLimit 
     });
-    alert('Configurações salvas! Lembre-se: os dados não persistirão até a integração com Google Sheets ser finalizada.');
+    // alert('Configurações salvas!'); // Removed. isSaving indicator is present.
   };
 
   const handleLogout = () => {
-    if (window.confirm('Tem certeza que deseja sair? Seus dados não salvos nesta sessão serão perdidos.')) {
+    if (window.confirm('Tem certeza que deseja sair?')) { // Simplified message
       logout();
       // Navigation will be handled by App.tsx due to isAuthenticated changing
     }
@@ -124,7 +125,7 @@ const SettingsScreen: React.FC = () => {
             type="submit"
             className={`w-full py-3 px-5 bg-gradient-to-r from-${COLORS.petroleumBlue} via-${COLORS.deepPurple} to-${COLORS.discreetNeonGreen} text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-${COLORS.primary}/50 transition-all duration-300 ease-in-out transform hover:scale-102 active:scale-100 shadow-lg hover:shadow-xl`}
           >
-            Salvar Alterações (Localmente)
+            Salvar Alterações
           </button>
         </div>
       </form>
@@ -135,7 +136,7 @@ const SettingsScreen: React.FC = () => {
       </div>
       <div className={`p-6 bg-${COLORS.cardBackground} rounded-xl shadow-lg`}>
           <h3 className={`text-lg font-semibold text-${COLORS.textPrimary} mb-2`}>Backup e Sincronização</h3>
-          <p className={`text-sm text-${COLORS.textSecondary}`}>A integração com Firebase foi removida. A intenção é utilizar Google Sheets para persistência de dados. <strong className="text-amber-400">No momento, os dados são salvos apenas localmente na sessão atual do navegador e serão perdidos ao fechar ou recarregar a página completamente.</strong> A implementação da sincronização com Google Sheets está pendente.</p>
+          <p className={`text-sm text-${COLORS.textSecondary}`}>Seus dados são salvos automaticamente na Planilha Google associada à sua conta quando você faz login e realiza alterações.</p>
       </div>
 
       <div className={`p-6 bg-${COLORS.cardBackground} rounded-xl shadow-lg`}>

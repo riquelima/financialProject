@@ -39,11 +39,12 @@ export interface AppState {
   activeMonthYear: string;
   data: Record<string, MonthData>; // Key is "YYYY-MM"
   settings: AppSettings;
-  isAuthenticated: boolean; // Added for authentication
+  isAuthenticated: boolean;
+  currentUser: string | null; // Added for multi-user
 }
 
-// This represents the structure of the data stored in Firestore for the user
-export interface FirestoreUserData {
+// This represents the structure of the data stored for a user
+export interface UserSpecificData {
   activeMonthYear: string;
   data: Record<string, MonthData>;
   settings: AppSettings;
@@ -51,9 +52,9 @@ export interface FirestoreUserData {
 
 
 export interface AppContextType extends AppState {
-  isLoading: boolean; // For initial data load status
-  isSaving: boolean; // For indicating when data is being saved to Firestore
-  error?: string; // For sharing error messages, e.g. from login or Firestore operations
+  isLoading: boolean; 
+  isSaving: boolean; 
+  error?: string; 
   addTransaction: (monthYear: string, periodType: PeriodType, transaction: Omit<Transaction, 'id'>) => void;
   deleteTransaction: (monthYear: string, periodType: PeriodType, transactionId: string) => void;
   updateTransaction: (monthYear: string, periodType: PeriodType, transaction: Transaction) => void;
@@ -72,8 +73,8 @@ export interface AppContextType extends AppState {
     creditCardRemainingLimit?: number;
     totalBenefits: number;
   };
-  login: (username: string, password: string) => Promise<boolean>; // Added for login
-  logout: () => void; // Added for logout
+  login: (username: string, password: string) => Promise<boolean>; 
+  logout: () => void; 
 }
 
 export const INCOME_CATEGORIES = [

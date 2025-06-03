@@ -1,10 +1,15 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, BENEFIT_CATEGORIES } from '../types';
+import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, BENEFIT_CATEGORIES, UserSpecificData } from '../types';
 import { getCurrentMonthYear, generateId } from '../utils/formatters';
 
 // URL for the Google Apps Script Web App
 const GOOGLE_SHEET_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbXzBf_MPmQ1p98GpSCe61-Iboqp_Rh3k3jEP085XVTg1Ir2sJrQbhx6KLEmGEuwEdlw/exec';
+
+// localStorage keys
+const LOCAL_STORAGE_CURRENT_USER = 'financeAppCurrentUser';
+const LOCAL_STORAGE_SESSION_EXPIRY = 'financeAppSessionExpiry';
+const SESSION_DURATION = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
 const createEmptyMonthData = (monthYear: string): MonthData => ({
   monthYear,
@@ -14,17 +19,22 @@ const createEmptyMonthData = (monthYear: string): MonthData => ({
   creditCardLimit: undefined,
 });
 
-const defaultInitialAppState: AppState = {
-  activeMonthYear: getCurrentMonthYear(),
+const defaultUserSpecificData = (monthYear: string = getCurrentMonthYear(), username?: string): UserSpecificData => ({
+  activeMonthYear: monthYear,
   data: {
-    [getCurrentMonthYear()]: createEmptyMonthData(getCurrentMonthYear()),
+    [monthYear]: createEmptyMonthData(monthYear),
   },
   settings: {
     currencySymbol: 'R$',
-    userName: undefined,
+    userName: username,
     theme: 'dark',
   },
+});
+
+const defaultInitialAppState: AppState = {
+  ...defaultUserSpecificData(),
   isAuthenticated: false,
+  currentUser: null,
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -35,85 +45,131 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(''); 
 
-  const loadDataFromSheet = useCallback(async () => {
+  const loadDataFromSheet = useCallback(async (username: string | null) => {
+    if (!username) {
+      setIsLoading(false); // Should not happen if called correctly
+      return;
+    }
     setIsLoading(true);
     setError('');
     
     try {
-        const response = await fetch(`${GOOGLE_SHEET_APP_SCRIPT_URL}?action=load`);
+        const response = await fetch(`${GOOGLE_SHEET_APP_SCRIPT_URL}?action=load&user=${encodeURIComponent(username)}`);
         
         if (!response.ok) {
             let errorData;
             try {
                 errorData = await response.json();
             } catch (e) {
-                // If response is not JSON, use status text or a generic message
                 errorData = { error: `HTTP error! status: ${response.status} - ${response.statusText}` };
             }
             throw new Error(errorData.error || `Erro HTTP ao carregar: ${response.status}`);
         }
         
-        const loadedUserData = await response.json();
+        const loadedData: UserSpecificData | { error?: string } = await response.json();
 
-        if (loadedUserData && typeof loadedUserData === 'object' && !loadedUserData.error) {
-            setAppState(prevState => {
-                const activeMonthFromSheet = loadedUserData.activeMonthYear || defaultInitialAppState.activeMonthYear;
-                let dataFromSheet = loadedUserData.data && Object.keys(loadedUserData.data).length > 0 
-                                    ? loadedUserData.data
-                                    : { [activeMonthFromSheet]: createEmptyMonthData(activeMonthFromSheet) };
+        if (loadedData && typeof loadedData === 'object') {
+          if ('error' in loadedData && typeof loadedData.error === 'string') {
+            throw new Error(`Erro da Planilha ao carregar: ${loadedData.error}`);
+          } else if ('activeMonthYear' in loadedData && 'data' in loadedData && 'settings' in loadedData) {
+            const userSpecificData = loadedData as UserSpecificData;
+            const activeMonthFromSheet = userSpecificData.activeMonthYear || getCurrentMonthYear();
+            let dataFromSheet = userSpecificData.data && Object.keys(userSpecificData.data).length > 0 
+                                ? userSpecificData.data
+                                : { [activeMonthFromSheet]: createEmptyMonthData(activeMonthFromSheet) };
 
-                // Ensure the active month (from sheet or default) has an entry in the data
-                if (!dataFromSheet[activeMonthFromSheet]) {
-                    dataFromSheet[activeMonthFromSheet] = createEmptyMonthData(activeMonthFromSheet);
-                }
-                
-                return {
-                    ...prevState, 
-                    activeMonthYear: activeMonthFromSheet,
-                    data: dataFromSheet,
-                    settings: { ...defaultInitialAppState.settings, ...loadedUserData.settings },
-                    // isAuthenticated should be preserved from current state before load
-                };
-            });
-        } else if (loadedUserData.error) {
-            throw new Error(`Erro da Planilha ao carregar: ${loadedUserData.error}`);
+            if (!dataFromSheet[activeMonthFromSheet]) {
+                dataFromSheet[activeMonthFromSheet] = createEmptyMonthData(activeMonthFromSheet);
+            }
+            
+            setAppState(prevState => ({
+                ...prevState, // Keep currentUser and isAuthenticated from session restore or login
+                activeMonthYear: activeMonthFromSheet,
+                data: dataFromSheet,
+                settings: { ...defaultUserSpecificData(activeMonthFromSheet, username).settings, ...userSpecificData.settings },
+            }));
+          } else {
+            console.warn("Resposta da Planilha Google ao carregar não continha dados esperados (estrutura de objeto inesperada):", loadedData);
+            setAppState(prevState => ({
+                ...prevState,
+                ...defaultUserSpecificData(getCurrentMonthYear(), username), // Use username here
+            }));
+          }
         } else {
-            // This case might happen if the script returns empty or non-JSON for success.
-            // For now, treat as an error or unexpected response.
-            console.warn("Resposta da Planilha Google ao carregar não continha dados esperados, mas sem erro explícito:", loadedUserData);
-            throw new Error("Resposta inesperada da Planilha Google ao carregar. Verifique o script.");
+          console.warn("Resposta da Planilha Google ao carregar não era um objeto válido (e.g. null):", loadedData);
+          setAppState(prevState => ({
+              ...prevState,
+              ...defaultUserSpecificData(getCurrentMonthYear(), username), // Use username here
+          }));
         }
     } catch (err: any) {
-      console.error("Falha ao carregar dados da Planilha Google:", err);
-      setError(`Falha ao carregar dados: ${err.message}. Verifique sua conexão ou a configuração da planilha. Usando dados padrão temporariamente.`);
+      console.error(`Falha ao carregar dados para ${username} da Planilha Google:`, err);
+      setError(`Falha ao carregar dados: ${err.message}. Usando dados padrão temporariamente.`);
       setAppState(prevState => ({
-          ...defaultInitialAppState, 
-          isAuthenticated: prevState.isAuthenticated, // Keep existing auth state
-          activeMonthYear: prevState.isAuthenticated ? prevState.activeMonthYear : defaultInitialAppState.activeMonthYear,
+          ...prevState, 
+          ...defaultUserSpecificData(getCurrentMonthYear(), username), // Use username here
       }));
     } finally {
       setIsLoading(false);
     }
   }, []); 
 
+  // Effect for initial session check - runs only once on mount
   useEffect(() => {
-    if (appState.isAuthenticated) {
-        if (Object.keys(appState.data).length <= 1 && appState.data[defaultInitialAppState.activeMonthYear] && appState.data[defaultInitialAppState.activeMonthYear].midMonth.transactions.length === 0 && appState.data[defaultInitialAppState.activeMonthYear].endOfMonth.transactions.length === 0) {
-           // Only load if data seems to be in its initial empty state or after a logout/reload without data.
-           loadDataFromSheet();
+    setIsLoading(true);
+    try {
+      const storedUser = localStorage.getItem(LOCAL_STORAGE_CURRENT_USER);
+      const storedExpiry = localStorage.getItem(LOCAL_STORAGE_SESSION_EXPIRY);
+
+      if (storedUser && storedExpiry) {
+        const expiryTime = parseInt(storedExpiry, 10);
+        if (Date.now() < expiryTime) {
+          // Session is valid
+          console.log("Sessão válida encontrada para:", storedUser);
+          setAppState(prevState => ({
+            ...prevState,
+            ...defaultUserSpecificData(getCurrentMonthYear(), storedUser), // Initialize user-specific parts
+            isAuthenticated: true,
+            currentUser: storedUser,
+          }));
+          // Data loading will be triggered by the next useEffect
+          return; 
         } else {
-            setIsLoading(false); // Data already seems to be populated or modified, don't overwrite with load from sheet implicitly
+          // Session expired
+          console.log("Sessão expirada encontrada.");
+          localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER);
+          localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
         }
-    } else {
-        setAppState(defaultInitialAppState); 
-        setIsLoading(false); 
+      }
+    } catch (error) {
+      console.error("Erro ao ler sessão do localStorage:", error);
+      localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER);
+      localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
     }
-  }, [appState.isAuthenticated, loadDataFromSheet]);
+    // If no valid session, ensure initial state and stop loading
+    setAppState(defaultInitialAppState); // Ensure clean slate
+    setIsLoading(false);
+  }, []); // Empty dependency array: run only once
+
+  // This useEffect handles loading data when authentication state changes to authenticated
+  // or when the current user changes.
+  useEffect(() => {
+    if (appState.isAuthenticated && appState.currentUser) {
+      // This condition ensures loadDataFromSheet is called after session restore or login
+      // and not unnecessarily if other parts of appState change.
+      console.log(`Usuário autenticado: ${appState.currentUser}. Disparando carregamento de dados.`);
+      loadDataFromSheet(appState.currentUser);
+    } else if (!appState.isAuthenticated && !appState.currentUser && !isLoading) { 
+      // If not authenticated and not already in an initial loading phase from session check
+      setAppState(defaultInitialAppState); 
+      // setIsLoading(false); // Already handled by session check or loadDataFromSheet finally
+    }
+  }, [appState.isAuthenticated, appState.currentUser, loadDataFromSheet]); // loadDataFromSheet is stable
 
 
-  const saveDataToSheet = useCallback(async (stateToSave: AppState) => {
-    if (!stateToSave.isAuthenticated) {
-      console.log("Usuário não autenticado. Dados não serão salvos na planilha.");
+  const saveDataToSheet = useCallback(async (stateToSave: AppState, username: string | null) => {
+    if (!stateToSave.isAuthenticated || !username) {
+      console.log("Usuário não autenticado ou nome de usuário ausente. Dados não serão salvos.");
       return;
     }
     
@@ -121,23 +177,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setError('');
     
     try {
-        const payloadToSave = {
+        const payloadToSave: UserSpecificData = {
+            data: stateToSave.data,
+            settings: stateToSave.settings,
+            activeMonthYear: stateToSave.activeMonthYear,
+        };
+        
+        const requestBody = {
             action: 'save',
-            payload: {
-                data: stateToSave.data,
-                settings: stateToSave.settings,
-                activeMonthYear: stateToSave.activeMonthYear,
-            }
+            user: username,
+            payload: payloadToSave
         };
         
         const response = await fetch(GOOGLE_SHEET_APP_SCRIPT_URL, {
             method: 'POST',
             headers: {
-              // Change Content-Type to text/plain as a common workaround for Apps Script POST CORS issues.
-              // The Apps Script (doPost) will still parse e.postData.contents as JSON.
               'Content-Type': 'text/plain;charset=utf-8', 
             },
-            body: JSON.stringify(payloadToSave), 
+            body: JSON.stringify(requestBody), 
         });
 
         if (!response.ok) {
@@ -150,24 +207,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             throw new Error(errorData.message || errorData.error || `Erro HTTP: ${response.status}`);
         }
 
-        const resultText = await response.text(); // Get text first for robust parsing
+        const resultText = await response.text();
         let result;
         try {
             result = JSON.parse(resultText);
         } catch (e) {
-            console.error("Failed to parse JSON response from save:", resultText);
+            console.error("Falha ao analisar resposta JSON do salvamento:", resultText);
             throw new Error("Resposta inválida do servidor ao salvar.");
         }
 
         if (result.status !== 'success') {
             throw new Error(result.message || "Falha desconhecida ao salvar na Planilha Google.");
         }
-        console.log("Dados salvos na Planilha Google com sucesso.");
+        console.log(`Dados para ${username} salvos na Planilha Google com sucesso.`);
 
     } catch (err: any) {
-        console.error("Falha ao salvar dados na Planilha Google:", err);
+        console.error(`Falha ao salvar dados para ${username} na Planilha Google:`, err);
         setError(`Falha ao salvar dados: ${err.message}. Suas últimas alterações podem não ter sido persistidas.`);
-        // Optionally, you might want to re-enable a "Save" button or indicate unsaved changes here
     } finally {
         setIsSaving(false);
     }
@@ -178,15 +234,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentData[monthYear]) {
       return currentData[monthYear];
     }
-    console.log(`Criando estrutura para o mês ${monthYear} pois não existia.`);
     return createEmptyMonthData(monthYear);
   }, []);
 
   const updateStateAndSave = useCallback((updater: (prevState: AppState) => AppState) => {
     setAppState(prevState => {
       const newState = updater(prevState);
-      if (newState.isAuthenticated) { 
-          saveDataToSheet(newState); 
+      if (newState.isAuthenticated && newState.currentUser) { 
+          saveDataToSheet(newState, newState.currentUser); 
       }
       return newState;
     });
@@ -275,7 +330,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentData) {
         return currentData;
     }
-    console.warn(`Dados para o mês ativo ${appState.activeMonthYear} não encontrados. Retornando estrutura vazia temporária.`);
     return createEmptyMonthData(appState.activeMonthYear);
   }, [appState.activeMonthYear, appState.data]);
 
@@ -341,20 +395,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [appState.data, getAllTransactionsForMonth]); 
 
-  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (usernameInput: string, passwordInput: string): Promise<boolean> => {
     setError(''); 
-    if (username === 'admin' && password === '1234') {
-      setAppState(prevState => ({ ...prevState, isAuthenticated: true, data: defaultInitialAppState.data, activeMonthYear: defaultInitialAppState.activeMonthYear, settings: defaultInitialAppState.settings })); // Reset data to ensure fresh load
-      // loadDataFromSheet will be called by useEffect due to isAuthenticated changing
+    setIsLoading(true); // Start loading process for login attempt
+    const username = usernameInput.trim();
+    const password = passwordInput.trim();
+
+    let loggedInUser: string | null = null;
+
+    if (username === 'admin' && password === '2391') {
+      loggedInUser = 'admin';
+    } else if (username === 'gilson' && password === '1234') {
+      loggedInUser = 'gilson';
+    }
+
+    if (loggedInUser) {
+      const expiryTime = Date.now() + SESSION_DURATION;
+      localStorage.setItem(LOCAL_STORAGE_CURRENT_USER, loggedInUser);
+      localStorage.setItem(LOCAL_STORAGE_SESSION_EXPIRY, expiryTime.toString());
+      
+      const initialDataForUser = defaultUserSpecificData(getCurrentMonthYear(), loggedInUser);
+      
+      setAppState({ 
+        ...initialDataForUser,
+        isAuthenticated: true,
+        currentUser: loggedInUser,
+      });
+      // loadDataFromSheet will be called by the useEffect due to isAuthenticated and currentUser changing
+      // setIsLoading(false) will be handled by loadDataFromSheet's finally block
       return true;
     }
     setError('Usuário ou senha inválidos.');
+    setAppState(prevState => ({...prevState, isAuthenticated: false, currentUser: null}));
+    setIsLoading(false); // Login failed, stop loading
     return false;
-  }, []); 
+  }, []); // loadDataFromSheet is not a direct dep here, but part of the flow triggered by state change
   
   const logout = useCallback(() => {
-    setAppState({ ...defaultInitialAppState, isAuthenticated: false }); 
-    console.log("Usuário deslogado.");
+    localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER);
+    localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
+    setAppState({ ...defaultInitialAppState }); 
+    setIsLoading(false); // Ensure loading stops on logout
+    console.log("Usuário deslogado, sessão limpa.");
   }, []); 
 
 

@@ -19,7 +19,7 @@ const LoginScreen: React.FC = () => {
     e.preventDefault();
     setLocalError(''); // Clear local error before attempt
     const success = await login(username, password);
-    if (!success && !contextError) { // if login fails and context didn't set an error (it should)
+    if (!success && !contextError) { 
       setLocalError('Usuário ou senha inválidos. Tente novamente.');
     }
     // Navigation is handled by App.tsx
@@ -49,7 +49,7 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
               className={`w-full bg-${COLORS.cardBackgroundLighter} border border-slate-600 text-${COLORS.textPrimary} placeholder-${COLORS.textSecondary} text-sm rounded-lg focus:ring-${COLORS.primary} focus:border-${COLORS.primary} block p-3 transition-colors duration-200 focus:outline-none focus:shadow-outline-blue`}
-              placeholder="admin"
+              placeholder="Nome de usuário"
             />
           </div>
 
@@ -67,7 +67,7 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               className={`w-full bg-${COLORS.cardBackgroundLighter} border border-slate-600 text-${COLORS.textPrimary} placeholder-${COLORS.textSecondary} text-sm rounded-lg focus:ring-${COLORS.primary} focus:border-${COLORS.primary} block p-3 transition-colors duration-200 focus:outline-none focus:shadow-outline-blue`}
-              placeholder="1234"
+              placeholder="Sua senha"
             />
           </div>
 
@@ -84,9 +84,7 @@ const LoginScreen: React.FC = () => {
             </button>
           </div>
         </form>
-         <p className={`mt-6 text-center text-xs text-${COLORS.textSecondary}`}>
-            Usuário padrão: <strong className={`text-${COLORS.textPrimary}`}>admin</strong> | Senha padrão: <strong className={`text-${COLORS.textPrimary}`}>1234</strong>
-        </p>
+        {/* A dica de credenciais foi removida daqui */}
       </div>
        <footer className="absolute bottom-4 text-center w-full">
         <p className={`text-xs text-slate-500`}>
