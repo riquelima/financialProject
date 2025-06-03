@@ -1,33 +1,56 @@
 import React from 'react';
 
-// Tailwind Color Palette
+// New "Dark Neon" Theme Color Palette
 export const COLORS = {
-  primary: 'emerald-500', // Main interactive elements, accents
-  secondary: 'sky-600', // Secondary actions, highlights
-  accent: 'purple-700', // Specific accents, potentially for charts or unique highlights
-  
-  background: 'slate-900', // Main background
-  cardBackground: 'slate-800', // Background for cards, modals
-  cardBackgroundLighter: 'slate-700', // Slightly lighter card background for depth or hover
-  
-  textPrimary: 'gray-100', // Main text color
-  textSecondary: 'gray-400', // Subdued text, placeholders
-  textAccent: 'emerald-400', // Text on primary backgrounds or for emphasis
+  absoluteBlack: '#0D0D0D',
+  deepGray1: '#121212', // Primary card/surface backgrounds
+  deepGray2: '#1E1E1E', // Secondary or slightly elevated surfaces
 
-  income: 'emerald-500', // Color for income amounts
-  expense: 'red-500', // Color for expense amounts
+  emeraldLime: '#00FFB2',
+  amethystPurple: '#A64AC9',
+  electricBlue: '#00BFFF',
+  softMagenta: '#FF55AA',
+  coralRed: '#FF6B6B', // For expenses
 
-  gradientFrom: 'from-slate-800', // Example: 'from-sky-700' (Azul Petróleo start)
-  gradientTo: 'to-slate-900',   // Example: 'to-purple-800' (Roxo Profundo end)
-  gradientVia: 'via-slate-800', // Example: 'via-purple-700'
+  textPrimary: '#E0E0E0',       // Main light gray text
+  textSecondary: '#A0A0A0',     // Subdued gray text
+  placeholderText: 'rgba(224, 224, 224, 0.4)', // For input placeholders
 
-  // Specific theme colors from prompt
-  petroleumBlue: 'teal-700', // Azul Petróleo
-  deepPurple: 'purple-800',  // Roxo Profundo
-  discreetNeonGreen: 'lime-400', // Verde Neon Discreto (can use emerald-400 for consistency)
+  // Added to fix TypeScript errors and align with Tailwind usage
+  cardBackground: 'slate-800',          // Tailwind class suffix
+  cardBackgroundLighter: 'slate-700',   // Tailwind class suffix
+  income: 'emerald-400',                // Tailwind class suffix (maps to COLORS.primary)
+  expense: 'red-500',                   // Tailwind class suffix (maps to COLORS.accentRed)
+  petroleumBlue: '[#1C3A4E]',            // Tailwind arbitrary value for gradients/backgrounds
+  deepPurple: 'purple-500',             // Tailwind class suffix (maps to COLORS.accentPurple)
+  textAccent: 'blue-400',               // Tailwind class suffix (maps to COLORS.accentBlue)
+  discreetNeonGreen: '[#00C896]',        // Tailwind arbitrary value
+
+  // Predefined gradients (Tailwind JIT can't always make these complex ones easily)
+  gradientPrimary: 'linear-gradient(135deg, var(--emerald-lime), var(--amethyst-purple))',
+  gradientSecondary: 'linear-gradient(135deg, var(--electric-blue), var(--soft-magenta))',
+  gradientExpense: 'linear-gradient(135deg, var(--coral-red), var(--amethyst-purple))',
+  gradientBalance: 'linear-gradient(135deg, var(--emerald-lime), var(--electric-blue))',
+  gradientButton: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple), var(--electric-blue))',
+  gradientButtonHover: 'linear-gradient(90deg, var(--electric-blue), var(--amethyst-purple), var(--emerald-lime))',
+
+  // Tailwind compatible gradient classes (approximations)
+  twGradientPrimaryFrom: 'from-emerald-400', // approx emeraldLime
+  twGradientPrimaryVia: 'via-purple-500', // approx amethystPurple
+  twGradientPrimaryTo: 'to-purple-600',
+
+  twGradientButton: 'bg-gradient-to-r from-[#00FFB2] via-[#A64AC9] to-[#00BFFF]', // emerald, amethyst, electric
+  twGradientCardBg: 'bg-gradient-to-br from-[rgba(18,18,18,0.7)] to-[rgba(30,30,30,0.5)]', // deepGray1 to deepGray2 with opacity
+
+  // For direct use in Tailwind classes where possible
+  primary: 'emerald-400', // #00FFB2 is brighter, Tailwind uses 400/500 for similar vibrancy
+  accentPurple: 'purple-500', // #A64AC9
+  accentBlue: 'blue-400', // #00BFFF
+  accentMagenta: 'pink-500', // #FF55AA
+  accentRed: 'red-500', // #FF6B6B
 };
 
-// Icons (Lucide-React inspired SVGs)
+// Icons (Lucide-React inspired SVGs) - No changes to SVG definitions themselves
 export const HomeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
 );
@@ -97,8 +120,7 @@ export const APP_NAME = "Controle Financeiro Pessoal";
 export const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export const PIE_CHART_COLORS = [
-  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
-  '#E7E9ED', '#80FFAA', '#FF80F1', '#80D4FF', '#FFCC80', '#B380FF',
-  '#FF6B6B', '#4ECDC4', '#F9C74F', '#577590', '#F8961E', '#F94144',
-  '#A0E7E5', '#B4F8C8', '#FBE7C6', '#FFDAB9'
+  '#00FFB2', '#A64AC9', '#00BFFF', '#FF55AA', '#FF6B6B', '#F9C74F', // emerald, amethyst, electric, magenta, coral, yellow
+  '#4BC0C0', '#9966FF', '#FF9F40', '#E7E9ED', '#577590', '#F8961E',
+  '#FF6384', '#36A2EB', '#FFCE56', '#F94144', '#A0E7E5', '#B4F8C8' 
 ];

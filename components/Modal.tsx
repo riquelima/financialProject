@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
-import { XIcon, COLORS } from '../constants';
+import { XIcon } from '../constants';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'; // Added 2xl for potentially larger content
-  backdropBlur?: boolean; // Prop to control backdrop blur
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  backdropBlur?: boolean;
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md', backdropBlur = true }) => {
@@ -19,7 +19,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
     };
     if (isOpen) {
       document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+      document.body.style.overflow = 'hidden'; 
     } else {
       document.body.style.overflow = 'auto';
     }
@@ -41,24 +41,25 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
 
   return (
     <div 
-      className={`fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out ${backdropBlur ? 'backdrop-blur-sm' : ''}`}
+      className={`fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[60] transition-opacity duration-300 ease-in-out ${backdropBlur ? 'backdrop-blur-md' : ''}`}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
     >
       <div 
-        className={`bg-${COLORS.cardBackground} rounded-xl shadow-2xl p-6 m-4 w-full ${sizeClasses[size]} transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-modalShow`}
-        onClick={(e) => e.stopPropagation()} // Prevent click inside modal from closing it
+        style={{ backgroundColor: 'var(--deep-gray-1)', border: '1px solid rgba(255,255,255,0.1)'}}
+        className={`rounded-[14px] shadow-2xl p-6 m-4 w-full ${sizeClasses[size]} transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-modalShow`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          {title && <h2 id="modal-title" className={`text-2xl font-semibold text-${COLORS.textPrimary}`}>{title}</h2>}
+        <div className="flex justify-between items-center mb-5">
+          {title && <h2 id="modal-title" className="text-2xl font-semibold" style={{color: 'var(--text-primary)'}}>{title}</h2>}
           <button 
             onClick={onClose} 
-            className={`text-${COLORS.textSecondary} hover:text-${COLORS.textPrimary} transition-colors p-1 rounded-full hover:bg-slate-700`}
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-full hover:bg-[var(--deep-gray-2)]"
             aria-label="Fechar modal"
           >
-            <XIcon className="w-6 h-6" />
+            <XIcon className="w-5 h-5" />
           </button>
         </div>
         <div>{children}</div>
@@ -71,7 +72,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
           }
         }
         .animate-modalShow {
-          animation: modalShow 0.3s forwards;
+          animation: modalShow 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
       `}</style>
     </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../hooks/useAppContext';
 import { getMonthName, addMonths } from '../utils/formatters';
-import { ChevronLeftIcon, ChevronRightIcon, COLORS } from '../constants';
+import { ChevronLeftIcon, ChevronRightIcon } from '../constants';
 
 interface MonthNavigatorProps {
   className?: string;
@@ -19,20 +19,23 @@ const MonthNavigator: React.FC<MonthNavigatorProps> = ({ className = ''}) => {
   };
 
   return (
-    <div className={`flex items-center justify-between p-4 bg-${COLORS.cardBackgroundLighter} rounded-lg shadow ${className}`}>
+    <div 
+      style={{ backgroundColor: 'var(--deep-gray-2)', border: '1px solid rgba(255,255,255,0.1)' }}
+      className={`flex items-center justify-between p-3 rounded-[14px] shadow-lg ${className}`}
+    >
       <button 
         onClick={handlePreviousMonth} 
-        className={`p-2 rounded-full hover:bg-${COLORS.petroleumBlue}/30 text-${COLORS.textSecondary} hover:text-${COLORS.textPrimary} transition-colors duration-200`}
+        className="p-2 rounded-full hover:bg-[var(--amethyst-purple)] text-[var(--text-secondary)] hover:text-white transition-all duration-300 ease-in-out transform hover:scale-110"
         aria-label="Mês anterior"
       >
         <ChevronLeftIcon className="w-6 h-6" />
       </button>
-      <h2 className={`text-xl font-semibold text-center text-${COLORS.textPrimary} tabular-nums`}>
+      <h2 className="text-xl font-semibold text-center tabular-nums" style={{ color: 'var(--text-primary)'}}>
         {getMonthName(activeMonthYear)}
       </h2>
       <button 
         onClick={handleNextMonth} 
-        className={`p-2 rounded-full hover:bg-${COLORS.petroleumBlue}/30 text-${COLORS.textSecondary} hover:text-${COLORS.textPrimary} transition-colors duration-200`}
+        className="p-2 rounded-full hover:bg-[var(--emerald-lime)] text-[var(--text-secondary)] hover:text-[var(--deep-gray-1)] transition-all duration-300 ease-in-out transform hover:scale-110"
         aria-label="Próximo mês"
       >
         <ChevronRightIcon className="w-6 h-6" />

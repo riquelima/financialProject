@@ -3,7 +3,7 @@ import Modal from './Modal';
 import { useAppContext } from '../hooks/useAppContext';
 import { Transaction, TransactionType, PeriodType, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types';
 import CategorySelect from './CategorySelect';
-import { COLORS } from '../constants';
+// import { COLORS } from '../constants'; // COLORS can be removed if using CSS vars directly
 import { formatDate } from '../utils/formatters';
 
 
@@ -31,15 +31,13 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
       setTransactionType(transactionToEdit.type);
       setDate(transactionToEdit.date);
     } else {
-      // Reset form for new transaction
       setDescription('');
       setAmount('');
       setCategory('');
-      // Default to expense, or could be smarter based on context if needed
       setTransactionType(TransactionType.EXPENSE); 
       setDate(new Date().toISOString().split('T')[0]);
     }
-  }, [transactionToEdit, isOpen]); // Reset form when modal opens or transactionToEdit changes
+  }, [transactionToEdit, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,42 +47,43 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
       return;
     }
 
-    // Ensure date is included in transactionData for both add and update
     const transactionData = { description, amount: numericAmount, category, type: transactionType, date };
 
     if (transactionToEdit) {
-      // Pass the complete transaction object for update, merging new data with existing id
       updateTransaction(activeMonthYear, periodType, { ...transactionData, id: transactionToEdit.id });
     } else {
-      // addTransaction now expects transactionData to include the date
       addTransaction(activeMonthYear, periodType, transactionData);
     }
-    onClose(); // Close modal after submission
+    onClose();
   };
 
   const categories = transactionType === TransactionType.INCOME ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  if (!category && categories.length > 0) {
-      // setCategory(categories[0]); // Auto-select first category, if desired. Forcing user selection is often better.
-  }
+  
+  const inputBaseClasses = "w-full bg-[var(--deep-gray-2)] border border-transparent text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-[10px] focus:border-[var(--emerald-lime)] focus:ring-1 focus:ring-[var(--emerald-lime)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus";
+  const labelBaseClasses = "block text-xs font-semibold mb-1.5 text-[var(--text-secondary)]";
 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={transactionToEdit ? "Editar Transação" : "Adicionar Transação"}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="transactionType" className={`block text-sm font-medium text-${COLORS.textSecondary} mb-1`}>Tipo</label>
-          <div className="flex rounded-md shadow-sm">
+          <label htmlFor="transactionType" className={labelBaseClasses}>Tipo</label>
+          <div className="flex rounded-[10px] shadow-sm overflow-hidden border border-[rgba(255,255,255,0.1)]">
             <button
               type="button"
               onClick={() => { setTransactionType(TransactionType.INCOME); setCategory(''); }}
-              className={`flex-1 py-2 px-4 text-sm font-medium ${transactionType === TransactionType.INCOME ? `bg-${COLORS.income} text-white` : `bg-slate-600 text-${COLORS.textPrimary} hover:bg-slate-500`} rounded-l-md focus:outline-none transition-colors`}
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold transition-all duration-300 ease-in-out focus:outline-none 
+                          ${transactionType === TransactionType.INCOME ? 'text-black shadow-md' : 'text-[var(--text-primary)] hover:bg-[var(--deep-gray-2)]'}`}
+              style={transactionType === TransactionType.INCOME ? { background: 'var(--emerald-lime)' } : { background: 'var(--deep-gray-1)'}}
             >
               Entrada
             </button>
             <button
               type="button"
               onClick={() => { setTransactionType(TransactionType.EXPENSE); setCategory(''); }}
-              className={`flex-1 py-2 px-4 text-sm font-medium ${transactionType === TransactionType.EXPENSE ? `bg-${COLORS.expense} text-white` : `bg-slate-600 text-${COLORS.textPrimary} hover:bg-slate-500`} rounded-r-md focus:outline-none transition-colors`}
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold transition-all duration-300 ease-in-out focus:outline-none 
+                          ${transactionType === TransactionType.EXPENSE ? 'text-black shadow-md' : 'text-[var(--text-primary)] hover:bg-[var(--deep-gray-2)]'}`}
+              style={transactionType === TransactionType.EXPENSE ? { background: 'var(--coral-red)' } : { background: 'var(--deep-gray-1)'}}
             >
               Saída
             </button>
@@ -92,20 +91,21 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
         </div>
 
         <div>
-          <label htmlFor="description" className={`block text-sm font-medium text-${COLORS.textSecondary} mb-1`}>Descrição</label>
+          <label htmlFor="description" className={labelBaseClasses}>Descrição</label>
           <input
             type="text"
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
-            className={`w-full bg-${COLORS.cardBackgroundLighter} border border-slate-600 text-${COLORS.textPrimary} placeholder-${COLORS.textSecondary} text-sm rounded-lg focus:ring-${COLORS.primary} focus:border-${COLORS.primary} block p-3 transition-colors duration-200 focus:outline-none focus:shadow-outline-blue`}
+            className={inputBaseClasses}
             placeholder="Ex: Supermercado, Salário"
+            style={{borderColor: 'rgba(255,255,255,0.1)'}}
           />
         </div>
         
         <div>
-          <label htmlFor="amount" className={`block text-sm font-medium text-${COLORS.textSecondary} mb-1`}>Valor ({settings.currencySymbol})</label>
+          <label htmlFor="amount" className={labelBaseClasses}>Valor ({settings.currencySymbol})</label>
           <input
             type="number"
             id="amount"
@@ -114,13 +114,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
             required
             min="0.01"
             step="0.01"
-            className={`w-full bg-${COLORS.cardBackgroundLighter} border border-slate-600 text-${COLORS.textPrimary} placeholder-${COLORS.textSecondary} text-sm rounded-lg focus:ring-${COLORS.primary} focus:border-${COLORS.primary} block p-3 transition-colors duration-200 focus:outline-none focus:shadow-outline-blue`}
+            className={inputBaseClasses}
             placeholder="0,00"
+            style={{borderColor: 'rgba(255,255,255,0.1)'}}
           />
         </div>
 
         <div>
-          <label htmlFor="category" className={`block text-sm font-medium text-${COLORS.textSecondary} mb-1`}>Categoria</label>
+          <label htmlFor="category" className={labelBaseClasses}>Categoria</label>
           <CategorySelect
             id="category"
             categories={categories}
@@ -131,33 +132,40 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
         </div>
 
          <div>
-          <label htmlFor="date" className={`block text-sm font-medium text-${COLORS.textSecondary} mb-1`}>Data</label>
+          <label htmlFor="date" className={labelBaseClasses}>Data</label>
           <input
             type="date"
             id="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            className={`w-full bg-${COLORS.cardBackgroundLighter} border border-slate-600 text-${COLORS.textPrimary} placeholder-${COLORS.textSecondary} text-sm rounded-lg focus:ring-${COLORS.primary} focus:border-${COLORS.primary} block p-3 transition-colors duration-200 focus:outline-none focus:shadow-outline-blue`}
+            className={`${inputBaseClasses} dark-date-picker`}
+            style={{borderColor: 'rgba(255,255,255,0.1)'}}
           />
         </div>
 
-        <div className="flex justify-end space-x-3 pt-2">
+        <div className="flex justify-end space-x-3 pt-3">
           <button 
             type="button" 
             onClick={onClose}
-            className={`py-2 px-4 border border-slate-600 text-sm font-medium rounded-lg text-${COLORS.textSecondary} hover:bg-slate-700 hover:text-${COLORS.textPrimary} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-slate-500 transition-colors`}
+            className="py-2.5 px-5 border border-[rgba(255,255,255,0.2)] text-sm font-semibold rounded-[10px] text-[var(--text-secondary)] hover:bg-[var(--deep-gray-2)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--deep-gray-1)] focus:ring-[var(--amethyst-purple)] transition-all duration-300 ease-in-out"
           >
             Cancelar
           </button>
           <button 
             type="submit"
-            className={`py-2 px-5 bg-gradient-to-r from-${COLORS.petroleumBlue} to-${COLORS.deepPurple} text-white text-sm font-medium rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-${COLORS.primary} transition-opacity shadow-md hover:shadow-lg transform active:scale-95`}
+            className="py-2.5 px-6 text-white text-sm font-semibold rounded-[10px] transition-all duration-300 ease-in-out transform hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--deep-gray-1)] focus:ring-[var(--emerald-lime)] shadow-lg hover:shadow-xl button-gradient-hover"
+            style={{ background: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple))', backgroundSize: '200% auto' }}
           >
             {transactionToEdit ? 'Salvar Alterações' : 'Adicionar'}
           </button>
         </div>
       </form>
+      <style>{`
+        .dark-date-picker::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(0.7); /* Adjust brightness for visibility */
+        }
+      `}</style>
     </Modal>
   );
 };

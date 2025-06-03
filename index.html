@@ -5,24 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle Financeiro Pessoal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif; /* Using Inter as a modern font */
+        :root {
+            --emerald-lime: #00FFB2;
+            --amethyst-purple: #A64AC9;
+            --electric-blue: #00BFFF;
+            --soft-magenta: #FF55AA;
+            --coral-red: #FF6B6B; /* For expenses */
+            --placeholder-text-color: rgba(255, 255, 255, 0.4);
+            --deep-gray-1: #121212;
+            --deep-gray-2: #1E1E1E;
+            --absolute-black: #0D0D0D;
         }
-        /* Custom scrollbar for a more modern look */
+
+        html, body, #root {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', 'Poppins', 'Outfit', sans-serif;
+            background-color: var(--absolute-black);
+            color: #E0E0E0; /* Light gray for primary text */
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #1a202c; /* dark-900 */
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4a5568; /* dark-600 */
+            background: var(--deep-gray-2);
             border-radius: 4px;
         }
+        ::-webkit-scrollbar-thumb {
+            background: var(--amethyst-purple);
+            border-radius: 4px;
+            border: 2px solid var(--deep-gray-2);
+        }
         ::-webkit-scrollbar-thumb:hover {
-            background: #718096; /* dark-500 */
+            background: var(--electric-blue);
+        }
+
+        /* General input placeholder styling */
+        ::placeholder {
+            color: var(--placeholder-text-color) !important;
+            opacity: 1; /* Firefox */
+        }
+        :-ms-input-placeholder { /* Internet Explorer 10-11 */
+           color: var(--placeholder-text-color) !important;
+        }
+        ::-ms-input-placeholder { /* Microsoft Edge */
+           color: var(--placeholder-text-color) !important;
+        }
+
+        /* Keyframes for animations */
+        @keyframes fabPulse {
+            0%, 100% { box-shadow: 0 0 2px 0px var(--emerald-lime), 0 0 0px 0px rgba(0, 255, 178, 0.1); }
+            50% { box-shadow: 0 0 4px 1px var(--emerald-lime), 0 0 2px 1px rgba(0, 255, 178, 0.1); }
+        }
+        
+        @keyframes gradientText {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes subtleShine {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple), var(--electric-blue));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientText 5s ease infinite;
+        }
+
+        .button-gradient-hover {
+            position: relative;
+            overflow: hidden;
+            background-size: 200% auto !important;
+            transition: background-position 0.5s ease !important;
+        }
+        .button-gradient-hover:hover {
+            background-position: right center !important; /* change the direction of the change here */
+        }
+
+        .glassmorphism-card {
+            background-color: rgba(30, 30, 30, 0.6); /* var(--deep-gray-2) with opacity */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+        }
+         
+        .neon-glow-active {
+            text-shadow: 0 0 2px var(--emerald-lime), 0 0 4px rgba(0, 255, 178, 0.5);
+            color: var(--emerald-lime) !important;
+        }
+        
+        /* Input focus neon effect */
+        .input-neon-focus:focus {
+            border-color: var(--emerald-lime);
+            box-shadow: 0 0 3px 0px rgba(0, 255, 178, 0.5);
+        }
+
+        .tab-active-underline {
+            position: relative;
+        }
+        .tab-active-underline::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple));
+            animation: gradientText 3s ease infinite; /* Re-use gradient animation */
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-countUp {
+            animation: countUp 0.5s ease-out forwards;
+        }
+
+        /* For transaction category tags */
+        .category-tag {
+          padding: 0.2rem 0.6rem;
+          border-radius: 8px;
+          font-size: 0.7rem;
+          font-weight: 500;
+          text-transform: capitalize;
         }
     </style>
 <script type="importmap">
@@ -38,7 +164,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-slate-900 text-gray-100">
+<body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
