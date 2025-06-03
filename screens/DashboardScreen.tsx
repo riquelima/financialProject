@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../hooks/useAppContext';
 import { formatCurrency, getMonthName } from '../utils/formatters';
@@ -7,8 +9,9 @@ import FloatingActionButton from '../components/FloatingActionButton';
 import AddTransactionModal from '../components/AddTransactionModal';
 import TransactionListModal from '../components/TransactionListModal'; 
 import ExpensePieChart from '../components/ExpensePieChart';
+import MonthlySummaryChart from '../components/MonthlySummaryChart'; // Import new chart
 import { PeriodType, Transaction, TransactionType } from '../types'; 
-import { DollarSignIcon, TrendingUpIcon, HomeIcon, BarChart2Icon, PieChartIcon, COLORS } from '../constants';
+import { DollarSignIcon, TrendingUpIcon, BarChart2Icon, PieChartIcon, COLORS } from '../constants'; // Removed HomeIcon, kept DollarSignIcon
 
 const DashboardScreen: React.FC = () => {
   const { activeMonthYear, settings, getMonthlySummary, getCurrentMonthData, getAllTransactionsForMonth } = useAppContext();
@@ -18,6 +21,7 @@ const DashboardScreen: React.FC = () => {
 
   const [isProventosModalOpen, setIsProventosModalOpen] = useState(false);
   const [isDebitosModalOpen, setIsDebitosModalOpen] = useState(false);
+  const [isMonthlyChartVisible, setIsMonthlyChartVisible] = useState(false); // State for new chart
 
   const summary = getMonthlySummary(activeMonthYear);
   const currentMonthData = getCurrentMonthData();
@@ -50,9 +54,9 @@ const DashboardScreen: React.FC = () => {
         <SummaryCard 
           title="Saldo em Conta" 
           value={formatCurrency(summary.accountBalance, settings.currencySymbol)} 
-          icon={<HomeIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
+          icon={<DollarSignIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />} // Changed HomeIcon to DollarSignIcon
           gradientBg={COLORS.gradientBalance}
-          valueColor={'var(--absolute-black)'} // Alterado para preto absoluto
+          valueColor={'var(--absolute-black)'} 
           subValue={`Saldo Inicial: ${formatCurrency(currentMonthData.openingBalance, settings.currencySymbol)}`}
         />
         <SummaryCard 
@@ -82,16 +86,31 @@ const DashboardScreen: React.FC = () => {
           borderColor={'var(--coral-red)'}
         />
          <SummaryCard 
-          title="Total de Benefícios" 
-          value={formatCurrency(summary.totalBenefits, settings.currencySymbol)}
-          valueColor={'var(--electric-blue)'}
-          borderColor={'var(--electric-blue)'}
-          icon={<PieChartIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />} // Added icon
+          title="Gráfico Mensal"
+          onClick={() => setIsMonthlyChartVisible(!isMonthlyChartVisible)}
+          value="" // No value displayed
+          isActionCard={true} // Use action card style
+          valueColor={'var(--electric-blue)'} // Title color for action card
+          borderColor={'var(--electric-blue)'} // Border color remains
+          icon={<PieChartIcon className="w-8 h-8" />} // Icon for the action card
         />
       </div>
       
+      {isMonthlyChartVisible && (
+        <div className="mt-5 space-y-6"> {/* Container for both charts */}
+          <MonthlySummaryChart 
+            summary={{ totalIncome: summary.totalIncome, totalExpenses: summary.totalExpenses }}
+            currencySymbol={settings.currencySymbol}
+          />
+          <ExpensePieChart 
+            expenseTransactions={allExpenseTransactions}
+            currencySymbol={settings.currencySymbol}
+          />
+        </div>
+      )}
+      
       {currentMonthData.creditCardLimit !== undefined && currentMonthData.creditCardLimit > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5"> {/* Ensure consistent spacing */}
           <SummaryCard 
             title="Limite do Cartão" 
             value={formatCurrency(currentMonthData.creditCardLimit, settings.currencySymbol)} 
@@ -108,11 +127,6 @@ const DashboardScreen: React.FC = () => {
         </div>
       )}
       
-      <ExpensePieChart 
-        expenseTransactions={allExpenseTransactions}
-        currencySymbol={settings.currencySymbol}
-      />
-
       <FloatingActionButton 
         onClick={() => handleOpenAddTransactionModal(PeriodType.MID_MONTH)}
         ariaLabel="Adicionar nova transação" 

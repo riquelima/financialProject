@@ -28,7 +28,7 @@ const HistoryScreen: React.FC = () => {
   return (
     <div className="p-4 space-y-6">
       <div className={`flex justify-between items-center p-4 bg-gradient-to-r from-${COLORS.petroleumBlue} to-${COLORS.deepPurple} rounded-lg shadow-md mb-6`}>
-        <h1 className="text-2xl font-bold text-white">Histórico Mensal</h1>
+        <h1 className="text-2xl font-bold text-white">📜 Histórico Mensal</h1>
         {/* Export button removed */}
       </div>
 
