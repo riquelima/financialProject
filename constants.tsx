@@ -33,6 +33,9 @@ export const COLORS = {
   gradientBalance: 'linear-gradient(135deg, var(--emerald-lime), var(--electric-blue))',
   gradientButton: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple), var(--electric-blue))',
   gradientButtonHover: 'linear-gradient(90deg, var(--electric-blue), var(--amethyst-purple), var(--emerald-lime))',
+  gradientAiChatFab: 'linear-gradient(135deg, var(--electric-blue), var(--amethyst-purple))',
+  gradientAiChatSend: 'linear-gradient(135deg, var(--electric-blue), var(--soft-magenta))',
+
 
   // Tailwind compatible gradient classes (approximations)
   twGradientPrimaryFrom: 'from-emerald-400', // approx emeraldLime
@@ -111,6 +114,23 @@ export const PieChartIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => 
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
     <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+  </svg>
+);
+export const RobotIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="5" y="2" width="14" height="14" rx="2" ry="2"></rect>
+    <path d="M9 16v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2"></path>
+    <circle cx="9" cy="9" r="1"></circle>
+    <circle cx="15" cy="9" r="1"></circle>
+    <path d="M9 12h6"></path>
+    <line x1="3" y1="18" x2="3" y2="22"></line>
+    <line x1="21" y1="18" x2="21" y2="22"></line>
+  </svg>
+);
+export const SendIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="22" y1="2" x2="11" y2="13"></line>
+    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
   </svg>
 );
 

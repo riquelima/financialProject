@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAppContext } from './hooks/useAppContext';
 import { HomeIcon, CalendarIcon, ListIcon, BarChart2Icon, CogIcon, COLORS, AlertTriangleIcon } from './constants';
@@ -7,6 +7,8 @@ import FinancialPeriodScreen from './screens/FinancialPeriodScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import LoginScreen from './screens/LoginScreen';
+import AiChatFab from './components/AiChatFab'; // Added
+import AiChatModal from './components/AiChatModal'; // Added
 import { PeriodType } from './types';
 
 const NavLinksArray = [
@@ -81,7 +83,8 @@ const GlobalFeedback: React.FC = () => {
 
 
 const App: React.FC = () => {
-  const { isAuthenticated } = useAppContext();
+  const { isAuthenticated, data, settings, activeMonthYear, getAllTransactionsForMonth, getMonthlySummary } = useAppContext(); // Added data for AI
+  const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false);
 
   return (
     <HashRouter>
@@ -99,7 +102,20 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          <AiChatFab onClick={() => setIsAiChatModalOpen(true)} />
           <BottomNavigation />
+          <AiChatModal 
+            isOpen={isAiChatModalOpen} 
+            onClose={() => setIsAiChatModalOpen(false)} 
+            // Pass relevant financial data for the AI context (placeholder for now)
+            // In a real scenario, this data would be passed to the n8n workflow
+            financialContext={{ 
+              currentMonthData: data[activeMonthYear], 
+              allTransactions: getAllTransactionsForMonth(activeMonthYear),
+              monthlySummary: getMonthlySummary(activeMonthYear),
+              userSettings: settings
+            }}
+          />
         </div>
       ) : (
         <Routes>
