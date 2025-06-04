@@ -1,76 +1,102 @@
-
 // Arquivo: api/chat.js
 // Este arquivo deve estar na pasta /api na raiz do seu projeto Vercel.
 
+// Importa o SDK do Google GenAI.
+// Certifique-se de que '@google/genai' está listado no seu package.json
+const { GoogleGenAI } = require('@google/genai');
+
 export default async function handler(req, res) {
-  // 1. Verificar se o método da requisição é POST
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end('Method Not Allowed');
   }
 
-  // 2. Obter o corpo da requisição do seu frontend
-  // O Vercel já faz o parse do corpo se o Content-Type for application/json
-  const requestBodyFromFrontend = req.body;
+  const { userInput, context: financialContext } = req.body;
 
-  if (!requestBodyFromFrontend || !requestBodyFromFrontend.userInput) {
-    return res.status(400).json({ message: 'Corpo da requisição inválido ou "userInput" ausente.' });
+  if (!userInput) {
+    return res.status(400).json({ message: '"userInput" é obrigatório no corpo da requisição.' });
   }
 
-  // 3. Defina a URL REAL do seu webhook n8n aqui!
-  // É ALTAMENTE RECOMENDADO usar uma variável de ambiente do Vercel aqui.
-  // Ex: const N8N_ACTUAL_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
-  // E configure N8N_WEBHOOK_URL nas variáveis de ambiente do seu projeto no Vercel.
-  const N8N_ACTUAL_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.srv837598.hstgr.cloud/webhook/3d45ca46-9f34-47a2-9a66-f1d66dab130f';
+  // Obtenha a API Key da Gemini das variáveis de ambiente do Vercel
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+  if (!GEMINI_API_KEY) {
+    console.error("API Key da Gemini não configurada nas variáveis de ambiente (GEMINI_API_KEY).");
+    return res.status(500).json({ message: "Erro de configuração do assistente: API Key ausente no servidor." });
+  }
 
   try {
-    // 4. Faça a requisição do seu servidor proxy para o n8n
-    const n8nResponse = await fetch(N8N_ACTUAL_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Adicione quaisquer outros cabeçalhos que o n8n possa esperar, se houver.
-        // Por exemplo, se você configurou uma chave de API no n8n para autenticação do webhook:
-        // 'X-N8N-API-KEY': process.env.N8N_WEBHOOK_AUTH_KEY,
-      },
-      body: JSON.stringify(requestBodyFromFrontend), // Envia o corpo recebido do frontend
-    });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-    // 5. Obtenha a resposta do n8n (mesmo que seja um erro)
-    // É importante tentar ler o corpo da resposta do n8n para repassar mensagens de erro.
-    let dataFromN8n;
-    try {
-        dataFromN8n = await n8nResponse.json();
-    } catch (jsonError) {
-        // Se o n8n não retornar JSON (ex: HTML de erro ou texto puro), pegue o texto.
-        const textError = await n8nResponse.text();
-        console.error('Resposta do n8n não era JSON. Status:', n8nResponse.status, 'Resposta como texto:', textError);
-        // Retorna o status do n8n, mas com uma mensagem de erro genérica se não for JSON
-        return res.status(n8nResponse.status).json({ 
-            message: `Erro do n8n (resposta não JSON): ${n8nResponse.status} ${n8nResponse.statusText}`,
-            details: textError.substring(0, 500) // Limita o tamanho do texto do erro
-        });
-    }
-
-    // 6. Verifique se a resposta do n8n foi bem-sucedida (status 2xx)
-    if (!n8nResponse.ok) {
-      console.error('Erro ao chamar n8n. Status:', n8nResponse.status, 'Resposta do n8n:', dataFromN8n);
-      // Repassa o status e a mensagem de erro do n8n para o frontend
-      return res.status(n8nResponse.status).json({
-        message: `Erro ao comunicar com o serviço de chat (n8n). Status: ${n8nResponse.status}`,
-        details: dataFromN8n, // Contém a resposta JSON do n8n, mesmo que seja um erro
-      });
+    // Construir o prompt para a Gemini
+    // Você pode personalizar este prompt para ser mais específico e útil
+    let contextString = "Dados Financeiros Atuais do Usuário:\n";
+    if (financialContext) {
+        if (financialContext.userSettings?.userName) {
+            contextString += `- Nome do Usuário: ${financialContext.userSettings.userName}\n`;
+        }
+        if (financialContext.currentMonthData?.monthYear) {
+            contextString += `- Mês Ativo: ${financialContext.currentMonthData.monthYear}\n`;
+        }
+        if (financialContext.monthlySummary) {
+            contextString += `- Resumo do Mês:\n`;
+            contextString += `  - Saldo Inicial: ${financialContext.currentMonthData?.openingBalance || 'Não informado'}\n`;
+            contextString += `  - Total de Proventos: ${financialContext.monthlySummary.totalIncome || 0}\n`;
+            contextString += `  - Total de Débitos: ${financialContext.monthlySummary.totalExpenses || 0}\n`;
+            contextString += `  - Saldo do Mês (Economia): ${financialContext.monthlySummary.netSavings || 0}\n`;
+            contextString += `  - Saldo Final em Conta: ${financialContext.monthlySummary.accountBalance || 0}\n`;
+        }
+        // Adicione mais detalhes do contexto financeiro conforme necessário
+    } else {
+        contextString = "Nenhum contexto financeiro adicional fornecido.\n";
     }
     
-    // 7. Envie a resposta bem-sucedida do n8n de volta para o seu frontend
-    return res.status(200).json(dataFromN8n);
+    const systemInstruction = `Você é um assistente financeiro especialista, amigável e prestativo.
+    Sua principal função é analisar os dados financeiros fornecidos e responder às perguntas do usuário sobre sua situação financeira.
+    Baseie suas respostas estritamente nos dados fornecidos. Não invente números ou informações.
+    Se os dados forem insuficientes para uma resposta completa, informe isso ao usuário de forma educada.
+    Forneça insights úteis e práticos quando possível. Mantenha as respostas concisas e claras.
+    A moeda padrão é Real (R$) a menos que especificado de outra forma no contexto.
+    `;
+
+    const fullPrompt = `
+    Contexto Financeiro:
+    ${contextString}
+    ---
+    Pergunta do Usuário: "${userInput}"
+    ---
+    Com base no contexto financeiro acima, responda à pergunta do usuário.
+    `;
+
+    console.log("Enviando prompt para a Gemini:", fullPrompt);
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-preview-04-17', // Modelo recomendado
+        contents: fullPrompt,
+        config: {
+            systemInstruction: systemInstruction,
+            // Você pode adicionar outros parâmetros de configuração aqui, se necessário
+            // Ex: temperature, topK, topP
+        }
+    });
+    
+    const aiResponseText = response.text;
+    console.log("Resposta da Gemini recebida:", aiResponseText);
+
+    if (!aiResponseText) {
+        return res.status(500).json({ message: "Assistente não conseguiu gerar uma resposta." });
+    }
+
+    return res.status(200).json({ aiResponseText: aiResponseText });
 
   } catch (error) {
-    // Captura erros de rede ou outros erros inesperados ao tentar se comunicar com o n8n
-    console.error('Erro interno no proxy de chat ao tentar se comunicar com n8n:', error);
+    console.error('Erro ao interagir com a API Gemini:', error);
+    let errorMessage = 'Erro interno no servidor ao processar sua solicitação com a IA.';
+    if (error.message) {
+        errorMessage += ` Detalhes: ${error.message}`;
+    }
     return res.status(500).json({ 
-      message: 'Erro interno no servidor proxy ao tentar contatar o serviço de chat.',
-      details: error.message 
+      message: errorMessage
     });
   }
 }
