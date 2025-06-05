@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "start": "echo \"No start script configured, serve index.html with a static server.\" && exit 1",
-    "build": "echo \"No build script configured for this pure frontend setup, Vercel handles API routes separately.\" && exit 0"
+    "build": "echo \"Starting build process...\" && mkdir -p dist && cp index.html metadata.json index.tsx App.tsx constants.tsx types.tsx dist/ && cp -r components hooks screens utils dist/ && echo \"Frontend files copied to dist. API folder remains at root for Vercel Serverless Functions.\""
   },
   "dependencies": {
     "@google/genai": "^0.14.0",
@@ -20,6 +20,6 @@
     "@types/react-dom": "^18.3.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   }
 }
