@@ -446,7 +446,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       
       if (!userData) { 
-        console.warn(`Usuário '${username}' não encontrado no banco de dados.`);
+        console.warn(`Usuário '${username}' não encontrado no banco de dados. Verifique a capitalização e a existência do nome de usuário no Supabase.`);
         setError('Usuário não encontrado ou senha inválida.'); 
         setIsLoading(false);
         return false;
@@ -470,7 +470,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         console.warn(
           `Senha inválida para o usuário: ${username}. ` +
-          `Senha Fornecida: "${password}", Senha Esperada (Hash no DB): "${userData.password_hash}"`
+          `Senha Fornecida: "${password}", Senha Esperada (Hash no DB): "${userData.password_hash}". ` +
+          `Verifique o valor exato do password_hash no Supabase.`
         );
         setError('Usuário não encontrado ou senha inválida.'); 
         setIsLoading(false);
