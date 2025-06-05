@@ -451,7 +451,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // which will handle isLoading internally and set it to false in its finally block.
         return true;
       } else {
-        console.warn(`Senha inválida para o usuário: ${username}`);
+        console.warn(
+          `Senha inválida para o usuário: ${username}. ` +
+          `Senha Fornecida: "${password}", Senha Esperada (Hash no DB): "${userData.password_hash}"`
+        );
         setError('Usuário não encontrado ou senha inválida.'); 
         setIsLoading(false);
         return false;

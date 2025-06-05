@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAppContext } from './hooks/useAppContext'; // Caminho já estava correto, reafirmando.
 import { HomeIcon, CalendarIcon, ListIcon, BarChart2Icon, CogIcon, COLORS, AlertTriangleIcon } from './constants';
@@ -8,13 +8,13 @@ import FinancialPeriodScreen from './screens/FinancialPeriodScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import LoginScreen from './screens/LoginScreen';
-import AiChatFab from './components/AiChatFab';
-import AiChatModal from './components/AiChatModal';
+// import AiChatFab from './components/AiChatFab'; // Removido
+// import AiChatModal from './components/AiChatModal'; // Removido
 import { PeriodType } from './types';
 
 const baseNavLinks = [
   { to: "/", icon: HomeIcon, label: "Dashboard" },
-  { to: "/mid-month", icon: CalendarIcon, label: "Meio Mês" },
+  { to: "/mid-month", icon: CalendarIcon, label: "Meio Mês" }, // Admin sees "Meio Mês"
   { to: "/end-of-month", icon: ListIcon, label: "Fim Mês" },
   { to: "/history", icon: BarChart2Icon, label: "Histórico" },
   { to: "/settings", icon: CogIcon, label: "Ajustes" },
@@ -31,11 +31,18 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentUsername }) 
      ${isActive ? 'neon-glow-active' : 'text-slate-400 hover:text-slate-200'}`;
 
   const visibleNavLinks = useMemo(() => {
-    // Assuming 'admin' is a specific username
     if (currentUsername === 'admin') {
       return baseNavLinks;
     }
-    return baseNavLinks.filter(link => link.label !== "Fim Mês");
+    // Para usuários não-admin: Dashboard, Mês, Histórico, Ajustes
+    return baseNavLinks
+      .filter(link => link.label !== "Fim Mês") // Remove "Fim Mês"
+      .map(link => {
+        if (link.label === "Meio Mês") {
+          return { ...link, label: "Mês" }; // Renomeia "Meio Mês" para "Mês"
+        }
+        return link;
+      });
   }, [currentUsername]);
 
   return (
@@ -97,11 +104,10 @@ const GlobalFeedback: React.FC = () => {
 
 
 const App: React.FC = () => {
-  const { isAuthenticated, currentUsername, // Use currentUsername for nav logic
-          data, settings, activeMonthYear, getAllTransactionsForMonth, getMonthlySummary, getCurrentMonthData } = useAppContext();
-  const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false);
+  const { isAuthenticated, currentUsername } = useAppContext();
+  // const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false); // Removido
   
-  const currentMonthDataForAI = getCurrentMonthData(); // This can be null
+  // const currentMonthDataForAI = getCurrentMonthData(); // Removido
 
   return (
     <HashRouter>
@@ -122,13 +128,13 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
-          <AiChatFab onClick={() => setIsAiChatModalOpen(true)} />
+          {/* <AiChatFab onClick={() => setIsAiChatModalOpen(true)} /> */} {/* Removido */}
           <BottomNavigation currentUsername={currentUsername} />
-          <AiChatModal 
+          {/* <AiChatModal 
             isOpen={isAiChatModalOpen} 
             onClose={() => setIsAiChatModalOpen(false)} 
             financialContext={{ 
-              currentMonthData: currentMonthDataForAI ? { // Pass specific fields, handle null
+              currentMonthData: currentMonthDataForAI ? {
                 openingBalance: currentMonthDataForAI.openingBalance,
                 creditCardLimit: currentMonthDataForAI.creditCardLimit,
               } : undefined, 
@@ -136,10 +142,10 @@ const App: React.FC = () => {
               monthlySummary: getMonthlySummary(activeMonthYear),
               userSettings: settings ? {
                  currencySymbol: settings.currencySymbol,
-                 userName: settings.userNameDisplay || currentUsername || undefined, // Use userNameDisplay
-              } : { currencySymbol: "R$", userName: currentUsername || undefined } // Provide defaults if settings null
+                 userName: settings.userNameDisplay || currentUsername || undefined,
+              } : { currencySymbol: "R$", userName: currentUsername || undefined }
             }}
-          />
+          /> */} {/* Removido */}
         </div>
       ) : (
         <Routes>

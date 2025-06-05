@@ -1,7 +1,7 @@
 
 
 import React, { useState, useMemo } from 'react';
-import { useAppContext } from '../hooks/useAppContext'; // Caminho já estava correto, reafirmando.
+import { useAppContext } from '../hooks/useAppContext'; 
 import { formatCurrency, getMonthName } from '../utils/formatters';
 import SummaryCard from '../components/SummaryCard';
 import MonthNavigator from '../components/MonthNavigator';
@@ -9,22 +9,25 @@ import FloatingActionButton from '../components/FloatingActionButton';
 import AddTransactionModal from '../components/AddTransactionModal';
 import TransactionListModal from '../components/TransactionListModal'; 
 import ExpensePieChart from '../components/ExpensePieChart';
-import MonthlySummaryChart from '../components/MonthlySummaryChart'; // Import new chart
+import MonthlySummaryChart from '../components/MonthlySummaryChart'; 
+import AiChatFab from '../components/AiChatFab'; // Importado
+import AiChatModal from '../components/AiChatModal'; // Importado
 import { PeriodType, Transaction, TransactionType } from '../types'; 
-import { DollarSignIcon, TrendingUpIcon, BarChart2Icon, PieChartIcon, COLORS } from '../constants'; // Removed HomeIcon, kept DollarSignIcon
+import { DollarSignIcon, TrendingUpIcon, BarChart2Icon, PieChartIcon, COLORS } from '../constants'; 
 
 const DashboardScreen: React.FC = () => {
-  const { activeMonthYear, settings, getMonthlySummary, getCurrentMonthData, getAllTransactionsForMonth } = useAppContext();
+  const { activeMonthYear, settings, getMonthlySummary, getCurrentMonthData, getAllTransactionsForMonth, currentUsername } = useAppContext();
   
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
   const [modalPeriodType, setModalPeriodType] = useState<PeriodType>(PeriodType.MID_MONTH);
 
   const [isProventosModalOpen, setIsProventosModalOpen] = useState(false);
   const [isDebitosModalOpen, setIsDebitosModalOpen] = useState(false);
-  const [isMonthlyChartVisible, setIsMonthlyChartVisible] = useState(false); // State for new chart
+  const [isMonthlyChartVisible, setIsMonthlyChartVisible] = useState(false); 
+  const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false); // Estado para o modal AI
 
   const summary = getMonthlySummary(activeMonthYear);
-  const currentMonthData = getCurrentMonthData(); // This can be null now
+  const currentMonthData = getCurrentMonthData(); 
 
   const currencySymbol = settings?.currencySymbol || 'R$';
 
@@ -49,9 +52,6 @@ const DashboardScreen: React.FC = () => {
   const closeDebitosModal = () => setIsDebitosModalOpen(false);
 
   if (!settings || !currentMonthData) {
-    // Render loading state or minimal UI if essential data isn't ready
-    // This check might be redundant if GlobalFeedback handles loading state well
-    // but it's good for ensuring data presence before rendering complex components.
     return (
       <div className="p-4 text-center" style={{color: 'var(--text-secondary)'}}>
         Carregando dados do dashboard...
@@ -102,16 +102,16 @@ const DashboardScreen: React.FC = () => {
          <SummaryCard 
           title="Gráfico Mensal"
           onClick={() => setIsMonthlyChartVisible(!isMonthlyChartVisible)}
-          value="" // No value displayed
-          isActionCard={true} // Use action card style
-          valueColor={'var(--electric-blue)'} // Title color for action card
-          borderColor={'var(--electric-blue)'} // Border color remains
-          icon={<PieChartIcon className="w-8 h-8" />} // Icon for the action card
+          value="" 
+          isActionCard={true} 
+          valueColor={'var(--electric-blue)'} 
+          borderColor={'var(--electric-blue)'} 
+          icon={<PieChartIcon className="w-8 h-8" />} 
         />
       </div>
       
       {isMonthlyChartVisible && (
-        <div className="mt-5 space-y-6"> {/* Container for both charts */}
+        <div className="mt-5 space-y-6"> 
           <MonthlySummaryChart 
             summary={{ totalIncome: summary.totalIncome, totalExpenses: summary.totalExpenses }}
             currencySymbol={currencySymbol}
@@ -124,7 +124,7 @@ const DashboardScreen: React.FC = () => {
       )}
       
       {currentMonthData.creditCardLimit !== undefined && currentMonthData.creditCardLimit !== null && currentMonthData.creditCardLimit > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5"> {/* Ensure consistent spacing */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5"> 
           <SummaryCard 
             title="Limite do Cartão" 
             value={formatCurrency(currentMonthData.creditCardLimit, currencySymbol)} 
@@ -145,6 +145,8 @@ const DashboardScreen: React.FC = () => {
         onClick={() => handleOpenAddTransactionModal(PeriodType.MID_MONTH)}
         ariaLabel="Adicionar nova transação" 
       />
+
+      <AiChatFab onClick={() => setIsAiChatModalOpen(true)} /> 
       
       <AddTransactionModal 
         isOpen={isAddTransactionModalOpen} 
@@ -168,6 +170,23 @@ const DashboardScreen: React.FC = () => {
         transactions={allExpenseTransactions}
         currencySymbol={currencySymbol}
         transactionTypeForColor={TransactionType.EXPENSE}
+      />
+
+      <AiChatModal 
+        isOpen={isAiChatModalOpen} 
+        onClose={() => setIsAiChatModalOpen(false)} 
+        financialContext={{ 
+          currentMonthData: currentMonthData ? { 
+            openingBalance: currentMonthData.openingBalance,
+            creditCardLimit: currentMonthData.creditCardLimit,
+          } : undefined, 
+          allTransactions: getAllTransactionsForMonth(activeMonthYear),
+          monthlySummary: summary,
+          userSettings: settings ? {
+              currencySymbol: settings.currencySymbol,
+              userName: settings.userNameDisplay || currentUsername || undefined, 
+          } : { currencySymbol: "R$", userName: currentUsername || undefined } 
+        }}
       />
     </div>
   );
