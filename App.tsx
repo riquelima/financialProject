@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { useAppContext } from './hooks/useAppContext';
+import { useAppContext } from './hooks/useAppContext'; // Caminho já estava correto, reafirmando.
 import { HomeIcon, CalendarIcon, ListIcon, BarChart2Icon, CogIcon, COLORS, AlertTriangleIcon } from './constants';
 import DashboardScreen from './screens/DashboardScreen';
 import FinancialPeriodScreen from './screens/FinancialPeriodScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import LoginScreen from './screens/LoginScreen';
-import AiChatFab from './components/AiChatFab'; // Added
-import AiChatModal from './components/AiChatModal'; // Added
+import AiChatFab from './components/AiChatFab';
+import AiChatModal from './components/AiChatModal';
 import { PeriodType } from './types';
 
-const NavLinksArray = [
+const baseNavLinks = [
   { to: "/", icon: HomeIcon, label: "Dashboard" },
   { to: "/mid-month", icon: CalendarIcon, label: "Meio Mês" },
   { to: "/end-of-month", icon: ListIcon, label: "Fim Mês" },
@@ -19,16 +20,29 @@ const NavLinksArray = [
   { to: "/settings", icon: CogIcon, label: "Ajustes" },
 ];
 
-const BottomNavigation: React.FC = () => {
+interface BottomNavigationProps {
+  // currentUser is now the username string, not the UUID
+  currentUsername: string | null; 
+}
+
+const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentUsername }) => {
   const navLinkClasses = ({ isActive }: { isActive: boolean }): string =>
     `flex flex-col items-center justify-center p-2 transition-colors duration-300 ease-in-out
      ${isActive ? 'neon-glow-active' : 'text-slate-400 hover:text-slate-200'}`;
+
+  const visibleNavLinks = useMemo(() => {
+    // Assuming 'admin' is a specific username
+    if (currentUsername === 'admin') {
+      return baseNavLinks;
+    }
+    return baseNavLinks.filter(link => link.label !== "Fim Mês");
+  }, [currentUsername]);
 
   return (
     <nav style={{ backgroundColor: 'var(--deep-gray-2)', borderTop: '1px solid rgba(255,255,255,0.1)' }} 
          className="fixed bottom-0 left-0 right-0 shadow-2xl z-50">
       <div className="max-w-md mx-auto flex justify-around items-center h-16">
-        {NavLinksArray.map(link => (
+        {visibleNavLinks.map(link => (
           <NavLink key={link.to} to={link.to} className={navLinkClasses} end={link.to === "/"}>
             <link.icon className="w-5 h-5 mb-0.5" />
             <span className="text-[10px] font-medium">{link.label}</span>
@@ -83,8 +97,11 @@ const GlobalFeedback: React.FC = () => {
 
 
 const App: React.FC = () => {
-  const { isAuthenticated, data, settings, activeMonthYear, getAllTransactionsForMonth, getMonthlySummary } = useAppContext(); // Added data for AI
+  const { isAuthenticated, currentUsername, // Use currentUsername for nav logic
+          data, settings, activeMonthYear, getAllTransactionsForMonth, getMonthlySummary, getCurrentMonthData } = useAppContext();
   const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false);
+  
+  const currentMonthDataForAI = getCurrentMonthData(); // This can be null
 
   return (
     <HashRouter>
@@ -95,25 +112,32 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={<DashboardScreen />} />
               <Route path="/mid-month" element={<FinancialPeriodScreen periodType={PeriodType.MID_MONTH} />} />
-              <Route path="/end-of-month" element={<FinancialPeriodScreen periodType={PeriodType.END_OF_MONTH} />} />
+              {currentUsername === 'admin' && ( // Logic based on username
+                <Route path="/end-of-month" element={<FinancialPeriodScreen periodType={PeriodType.END_OF_MONTH} />} />
+              )}
               <Route path="/history" element={<HistoryScreen />} />
               <Route path="/settings" element={<SettingsScreen />} />
               <Route path="/login" element={<Navigate to="/" replace />} />
+              {currentUsername !== 'admin' && <Route path="/end-of-month" element={<Navigate to="/" replace />} />}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
           <AiChatFab onClick={() => setIsAiChatModalOpen(true)} />
-          <BottomNavigation />
+          <BottomNavigation currentUsername={currentUsername} />
           <AiChatModal 
             isOpen={isAiChatModalOpen} 
             onClose={() => setIsAiChatModalOpen(false)} 
-            // Pass relevant financial data for the AI context (placeholder for now)
-            // In a real scenario, this data would be passed to the n8n workflow
             financialContext={{ 
-              currentMonthData: data[activeMonthYear], 
+              currentMonthData: currentMonthDataForAI ? { // Pass specific fields, handle null
+                openingBalance: currentMonthDataForAI.openingBalance,
+                creditCardLimit: currentMonthDataForAI.creditCardLimit,
+              } : undefined, 
               allTransactions: getAllTransactionsForMonth(activeMonthYear),
               monthlySummary: getMonthlySummary(activeMonthYear),
-              userSettings: settings
+              userSettings: settings ? {
+                 currencySymbol: settings.currencySymbol,
+                 userName: settings.userNameDisplay || currentUsername || undefined, // Use userNameDisplay
+              } : { currencySymbol: "R$", userName: currentUsername || undefined } // Provide defaults if settings null
             }}
           />
         </div>

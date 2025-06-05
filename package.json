@@ -1,22 +1,25 @@
+
 {
-  "name": "copy-of-controle-financeiro-pessoal-2",
+  "name": "controle-financeiro-pessoal",
+  "version": "1.0.0",
+  "description": "Aplicativo web para controle financeiro pessoal com assistente AI.",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "echo \"No start script configured, serve index.html with a static server.\" && exit 1",
+    "build": "echo \"No build script configured for this pure frontend setup, Vercel handles API routes separately.\" && exit 0"
   },
   "dependencies": {
+    "@google/genai": "^0.14.0",
+    "firebase": "^11.8.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.1",
-    "firebase": "^11.8.1"
+    "react-router-dom": "^7.6.1"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

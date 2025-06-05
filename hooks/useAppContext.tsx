@@ -1,344 +1,765 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, BENEFIT_CATEGORIES, UserSpecificData } from '../types';
-import { getCurrentMonthYear, generateId } from '../utils/formatters';
 
-// URL for the Google Apps Script Web App
-const GOOGLE_SHEET_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbXzBf_MPmQ1p98GpSCe61-Iboqp_Rh3k3jEP085XVTg1Ir2sJrQbhx6KLEmGEuwEdlw/exec';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, BENEFIT_CATEGORIES, FinancialPeriodData } from '../types';
+import { getCurrentMonthYear, generateId as generateClientSideId } from '../utils/formatters'; // Renamed to avoid conflict if Supabase uses 'id'
+
+// Supabase Client Initialization
+const YOUR_SUPABASE_URL_HERE: string = 'https://wbxjsqixqxdcagiorccx.supabase.co'; // Updated with user's derived URL
+const YOUR_SUPABASE_ANON_KEY_HERE: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndieGpzcWl4cXhkY2FnaW9yY2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5NDY2MTEsImV4cCI6MjA2NDUyMjYxMX0.k6XbupkpNarKbmIGKUPYnRFh9Fha5Li4gq5l5HvRe7w'; // Updated with user's Anon Key
+
+let supabase: SupabaseClient | null = null;
+let isSupabaseConfigured = false;
+
+// Check if the placeholders have been replaced
+const URL_PLACEHOLDER = 'YOUR_SUPABASE_URL_PLACEHOLDER'; // Constant for original placeholder text
+const KEY_PLACEHOLDER_LITERAL = 'YOUR_SUPABASE_ANON_KEY_PLACEHOLDER';
+
+
+if (YOUR_SUPABASE_URL_HERE === URL_PLACEHOLDER || YOUR_SUPABASE_URL_HERE.trim() === '' ||
+    YOUR_SUPABASE_ANON_KEY_HERE === KEY_PLACEHOLDER_LITERAL || YOUR_SUPABASE_ANON_KEY_HERE.trim() === '') { // Corrected placeholder check
+  console.error(
+    "Supabase URL or Anon Key is not configured. " +
+    "Please update YOUR_SUPABASE_URL_PLACEHOLDER and YOUR_SUPABASE_ANON_KEY_PLACEHOLDER " + // Keep placeholder names consistent in message
+    "in hooks/useAppContext.tsx with your actual Supabase credentials."
+  );
+  isSupabaseConfigured = false;
+} else {
+  try {
+    supabase = createClient(YOUR_SUPABASE_URL_HERE, YOUR_SUPABASE_ANON_KEY_HERE);
+    isSupabaseConfigured = true;
+    console.log("Supabase client initialized successfully.");
+  } catch (e) {
+    console.error("Failed to initialize Supabase client. Check URL and Key format.", e);
+    isSupabaseConfigured = false;
+  }
+}
+
 
 // localStorage keys
-const LOCAL_STORAGE_CURRENT_USER = 'financeAppCurrentUser';
+const LOCAL_STORAGE_USER_ID = 'financeAppUserId';
+const LOCAL_STORAGE_USERNAME = 'financeAppUsername'; // Store username for convenience
 const LOCAL_STORAGE_SESSION_EXPIRY = 'financeAppSessionExpiry';
-const SESSION_DURATION = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+const SESSION_DURATION = 2 * 60 * 60 * 1000; // 2 hours
 
-const createEmptyMonthData = (monthYear: string): MonthData => ({
+const createEmptyMonthDataStructure = (monthYear: string, userId?: string, id?: string): MonthData => ({
+  id, // Supabase ID for the months_data record
   monthYear,
   midMonth: { transactions: [] },
   endOfMonth: { transactions: [] },
   openingBalance: 0,
   creditCardLimit: undefined,
+  user_id: userId,
 });
 
-const defaultUserSpecificData = (monthYear: string = getCurrentMonthYear(), username?: string): UserSpecificData => ({
-  activeMonthYear: monthYear,
-  data: {
-    [monthYear]: createEmptyMonthData(monthYear),
-  },
-  settings: {
-    currencySymbol: 'R$',
-    userName: username,
-    theme: 'dark',
-  },
-});
+const defaultAppSettings: AppSettings = {
+  currencySymbol: 'R$',
+  userNameDisplay: '',
+  theme: 'dark',
+};
 
 const defaultInitialAppState: AppState = {
-  ...defaultUserSpecificData(),
+  activeMonthYear: getCurrentMonthYear(),
+  data: {},
+  settings: null, // Initialize as null, will be fetched
   isAuthenticated: false,
-  currentUser: null,
+  currentUser: null, // Will store User UUID (id)
+  currentUsername: null, // Will store User login username
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const SUPABASE_CONFIG_ERROR_MESSAGE = "Supabase não está configurado. Por favor, verifique se as credenciais (URL e Chave Anon) estão corretas no arquivo 'hooks/useAppContext.tsx'.";
+
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [appState, setAppState] = useState<AppState>(defaultInitialAppState);
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true); // Start as true until config check
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(''); 
+  const [error, setError] = useState('');
 
-  const loadDataFromSheet = useCallback(async (username: string | null) => {
-    if (!username) {
-      setIsLoading(false); // Should not happen if called correctly
+  const clearError = () => setError('');
+
+  // Helper to get or create a MonthData record in Supabase
+  const getOrCreateSupabaseMonthRecord = useCallback(async (userId: string, monthYear: string): Promise<string> => {
+    if (!supabase || !isSupabaseConfigured) {
+      throw new Error(SUPABASE_CONFIG_ERROR_MESSAGE);
+    }
+    // Check if exists
+    let { data: existingMonth, error: fetchError } = await supabase
+      .from('months_data')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('month_year', monthYear)
+      .maybeSingle(); // Use maybeSingle for safer check
+
+    if (fetchError) { // Any error other than not found (which maybeSingle handles by returning null data)
+      throw new Error(`Falha ao verificar mês no Supabase: ${fetchError.message}`);
+    }
+
+    if (existingMonth) {
+      return existingMonth.id;
+    }
+
+    // Create if not exists
+    const { data: newMonth, error: insertError } = await supabase
+      .from('months_data')
+      .insert({ user_id: userId, month_year: monthYear, opening_balance: 0 })
+      .select('id')
+      .single(); // single is okay here, we expect one row back after insert
+
+    if (insertError || !newMonth) {
+      throw new Error(`Falha ao criar registro do mês ${monthYear} no Supabase: ${insertError?.message || 'No data returned'}`);
+    }
+    return newMonth.id;
+  }, [isSupabaseConfigured]); // Added isSupabaseConfigured dependency
+
+
+  const loadAllUserDataForUser = useCallback(async (userId: string, username: string) => {
+    if (!supabase || !isSupabaseConfigured) {
+      setError(SUPABASE_CONFIG_ERROR_MESSAGE);
+      setIsLoading(false);
+      setAppState(prev => ({...prev, isAuthenticated: false, currentUser: null, currentUsername: null}));
       return;
     }
-    setIsLoading(true);
-    setError('');
+    clearError();
+    setIsLoading(true); // Set loading true at the beginning of data fetching
     
+    let settingsData: AppSettings | null = null;
+    let activeMonthYearToSet = getCurrentMonthYear();
+
     try {
-        const response = await fetch(`${GOOGLE_SHEET_APP_SCRIPT_URL}?action=load&user=${encodeURIComponent(username)}`);
-        
-        if (!response.ok) {
-            let errorData;
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { error: `HTTP error! status: ${response.status} - ${response.statusText}` };
-            }
-            throw new Error(errorData.error || `Erro HTTP ao carregar: ${response.status}`);
-        }
-        
-        const loadedData: UserSpecificData | { error?: string } = await response.json();
+      // 1. Fetch/Create Settings
+      let { data: fetchedSettings, error: settingsQueryError } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-        if (loadedData && typeof loadedData === 'object') {
-          if ('error' in loadedData && typeof loadedData.error === 'string') {
-            throw new Error(`Erro da Planilha ao carregar: ${loadedData.error}`);
-          } else if ('activeMonthYear' in loadedData && 'data' in loadedData && 'settings' in loadedData) {
-            const userSpecificData = loadedData as UserSpecificData;
-            const activeMonthFromSheet = userSpecificData.activeMonthYear || getCurrentMonthYear();
-            let dataFromSheet = userSpecificData.data && Object.keys(userSpecificData.data).length > 0 
-                                ? userSpecificData.data
-                                : { [activeMonthFromSheet]: createEmptyMonthData(activeMonthFromSheet) };
+      if (settingsQueryError) {
+        console.error('Supabase settings initial fetch error:', settingsQueryError);
+        throw settingsQueryError;
+      }
 
-            if (!dataFromSheet[activeMonthFromSheet]) {
-                dataFromSheet[activeMonthFromSheet] = createEmptyMonthData(activeMonthFromSheet);
+      if (fetchedSettings) {
+        settingsData = fetchedSettings as AppSettings;
+        console.log(`Settings found for user ${userId}.`);
+      } else {
+        console.log(`Settings not found for user ${userId}, attempting to create default settings.`);
+        try {
+          const { data: newSettings, error: insertSettingsError } = await supabase
+            .from('settings')
+            .insert({ user_id: userId, currency_symbol: 'R$', user_name_display: username, theme: 'dark' })
+            .select()
+            .single();
+          if (insertSettingsError) throw insertSettingsError;
+          settingsData = newSettings as AppSettings;
+          console.log(`Default settings created for user ${userId}.`);
+        } catch (insertError: any) {
+          if (insertError.code === '23505') { // Unique constraint violation
+            console.warn(`Insert default settings failed with 23505 for user ${userId}. Assuming record exists. Re-fetching.`);
+            const { data: refetchedSettings, error: refetchError } = await supabase
+              .from('settings')
+              .select('*')
+              .eq('user_id', userId)
+              .single(); // Expect it to exist
+            if (refetchError) {
+              console.error('Error re-fetching settings after 23505:', refetchError);
+              throw new Error(`Falha ao re-buscar configurações após erro de duplicidade (23505). Detalhe: ${refetchError.message}`);
             }
-            
-            setAppState(prevState => ({
-                ...prevState, // Keep currentUser and isAuthenticated from session restore or login
-                activeMonthYear: activeMonthFromSheet,
-                data: dataFromSheet,
-                settings: { ...defaultUserSpecificData(activeMonthFromSheet, username).settings, ...userSpecificData.settings },
-            }));
+            if (!refetchedSettings) {
+              console.error('Settings re-fetch after 23505 returned no data, this is unexpected.');
+              throw new Error('Configurações não encontradas ao tentar re-buscar após erro de duplicidade (23505).');
+            }
+            settingsData = refetchedSettings as AppSettings;
+            console.log('Settings successfully re-fetched after 23505 error.');
           } else {
-            console.warn("Resposta da Planilha Google ao carregar não continha dados esperados (estrutura de objeto inesperada):", loadedData);
-            setAppState(prevState => ({
-                ...prevState,
-                ...defaultUserSpecificData(getCurrentMonthYear(), username), // Use username here
-            }));
+            console.error('Supabase insert default settings error (non-23505):', insertError);
+            throw insertError; // Propagate other insert errors
           }
-        } else {
-          console.warn("Resposta da Planilha Google ao carregar não era um objeto válido (e.g. null):", loadedData);
-          setAppState(prevState => ({
-              ...prevState,
-              ...defaultUserSpecificData(getCurrentMonthYear(), username), // Use username here
-          }));
         }
+      }
+
+      // 2. Fetch/Create Active Month Year
+      let { data: activeMonthRecord, error: activeMonthQueryError } = await supabase
+        .from('active_months')
+        .select('active_month_year')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (activeMonthQueryError) {
+        console.error('Supabase active_month initial fetch error:', activeMonthQueryError);
+        throw activeMonthQueryError;
+      }
+
+      if (activeMonthRecord) {
+        activeMonthYearToSet = activeMonthRecord.active_month_year;
+        console.log(`Active month found for user ${userId}: ${activeMonthYearToSet}`);
+      } else { 
+         console.log(`Active month not found for user ${userId}, attempting to create default.`);
+         try {
+           const { error: insertActiveMonthError } = await supabase
+             .from('active_months')
+             .insert({ user_id: userId, active_month_year: activeMonthYearToSet });
+           if (insertActiveMonthError) throw insertActiveMonthError;
+           console.log(`Default active month created for user ${userId}: ${activeMonthYearToSet}`);
+         } catch (insertError: any) {
+           if (insertError.code === '23505') {
+             console.warn(`Insert default active_month failed with 23505 for user ${userId}. Assuming record exists. Re-fetching.`);
+             const { data: refetchedActiveMonth, error: refetchError } = await supabase
+               .from('active_months')
+               .select('active_month_year')
+               .eq('user_id', userId)
+               .single(); 
+             if (refetchError) {
+               console.error('Error re-fetching active_month after 23505:', refetchError);
+               throw new Error(`Falha ao re-buscar mês ativo após erro de duplicidade (23505). Detalhe: ${refetchError.message}`);
+             }
+             if (!refetchedActiveMonth) {
+                console.error('Active_month re-fetch after 23505 returned no data.');
+                throw new Error('Mês ativo não encontrado ao tentar re-buscar após erro de duplicidade (23505).');
+             }
+             activeMonthYearToSet = refetchedActiveMonth.active_month_year;
+             console.log('Active_month successfully re-fetched after 23505 error.');
+           } else {
+             console.error('Supabase insert default active_month error (non-23505):', insertError);
+             throw insertError;
+           }
+         }
+      }
+
+      // 3. Fetch all MonthData entries for the user
+      const { data: userMonthsData, error: monthsError } = await supabase
+        .from('months_data')
+        .select('*')
+        .eq('user_id', userId);
+      if (monthsError) {
+        console.error('Supabase months_data fetch error:', monthsError);
+        throw monthsError;
+      }
+
+      // 4. Fetch all Transactions for the user
+      const { data: userTransactions, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false }); 
+      if (transactionsError) {
+        console.error('Supabase transactions fetch error:', transactionsError);
+        throw transactionsError;
+      }
+
+      // 5. Reconstruct AppState.data
+      const reconstructedData: Record<string, MonthData> = {};
+      if (userMonthsData) {
+        for (const mData of userMonthsData) {
+          const monthTransactions = userTransactions?.filter(t => t.month_data_id === mData.id) || [];
+          reconstructedData[mData.month_year] = {
+            id: mData.id,
+            monthYear: mData.month_year,
+            openingBalance: mData.opening_balance,
+            creditCardLimit: mData.credit_card_limit,
+            user_id: mData.user_id,
+            midMonth: {
+              transactions: monthTransactions.filter(t => t.period_type === PeriodType.MID_MONTH)
+            },
+            endOfMonth: {
+              transactions: monthTransactions.filter(t => t.period_type === PeriodType.END_OF_MONTH)
+            }
+          };
+        }
+      }
+      
+      if (!reconstructedData[activeMonthYearToSet]) {
+        console.log(`Data for active month ${activeMonthYearToSet} not found locally, ensuring Supabase record exists.`);
+        const monthId = await getOrCreateSupabaseMonthRecord(userId, activeMonthYearToSet);
+        reconstructedData[activeMonthYearToSet] = createEmptyMonthDataStructure(activeMonthYearToSet, userId, monthId);
+        console.log(`Local data structure for ${activeMonthYearToSet} created/ensured.`);
+      }
+      
+      setAppState({
+        isAuthenticated: true,
+        currentUser: userId,
+        currentUsername: username,
+        settings: settingsData, // settingsData is now guaranteed to be AppSettings
+        activeMonthYear: activeMonthYearToSet,
+        data: reconstructedData,
+      });
+      console.log("User data loaded and state updated for:", username);
+
     } catch (err: any) {
-      console.error(`Falha ao carregar dados para ${username} da Planilha Google:`, err);
-      setError(`Falha ao carregar dados: ${err.message}. Usando dados padrão temporariamente.`);
-      setAppState(prevState => ({
-          ...prevState, 
-          ...defaultUserSpecificData(getCurrentMonthYear(), username), // Use username here
+      const baseUiMessage = "Falha crítica ao carregar os dados do usuário";
+      let finalUiMessage = baseUiMessage;
+
+      const errorProperties = ['message', 'code', 'details', 'hint'];
+      const allErrorKeys = Object.getOwnPropertyNames(err).concat(errorProperties.filter(p => err[p] !== undefined));
+      console.error(`${baseUiMessage}. Erro completo:`, JSON.stringify(err, Array.from(new Set(allErrorKeys)), 2));
+      
+      let parts = [baseUiMessage];
+      if (err.message && typeof err.message === 'string' && err.message.trim() !== "") parts.push(`Detalhe: ${err.message.trim()}`);
+      
+      if (err.code && typeof err.code === 'string' && err.code.trim() !== "") parts.push(`Código: ${err.code.trim()}`);
+      else if (err.code) parts.push(`Código: ${String(err.code)}`); 
+
+      if (err.details && typeof err.details === 'string' && err.details.trim() !== "") parts.push(`Info: ${err.details.trim()}`);
+      if (err.hint && typeof err.hint === 'string' && err.hint.trim() !== "") parts.push(`Dica: ${err.hint.trim()}`);
+      
+      finalUiMessage = parts.join('. ') + ". Tente recarregar a página ou contate o suporte se o problema persistir.";
+      
+      setError(finalUiMessage);
+      setAppState(prevState => ({ 
+        ...defaultInitialAppState,
+        isAuthenticated: true, 
+        currentUser: userId,
+        currentUsername: username,
+        settings: defaultAppSettings, 
+        data: { [getCurrentMonthYear()]: createEmptyMonthDataStructure(getCurrentMonthYear(),userId) }
       }));
     } finally {
+      setIsLoading(false); // Set loading false at the end of data fetching
+    }
+  }, [getOrCreateSupabaseMonthRecord, isSupabaseConfigured]); // Added isSupabaseConfigured dependency
+
+  // Effect for initial config check and session check
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setError(SUPABASE_CONFIG_ERROR_MESSAGE);
+      setAppState(prev => ({...prev, isAuthenticated: false}));
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const storedUserId = localStorage.getItem(LOCAL_STORAGE_USER_ID);
+      const storedUsername = localStorage.getItem(LOCAL_STORAGE_USERNAME);
+      const storedExpiry = localStorage.getItem(LOCAL_STORAGE_SESSION_EXPIRY);
+
+      if (storedUserId && storedUsername && storedExpiry && Date.now() < parseInt(storedExpiry, 10)) {
+        console.log("Sessão válida encontrada para:", storedUsername);
+         setAppState(prevState => ({
+          ...prevState,
+          isAuthenticated: true,
+          currentUser: storedUserId,
+          currentUsername: storedUsername,
+        }));
+        // setIsLoading(false) will be handled by the next useEffect.
+      } else {
+        if (storedUserId) console.log("Sessão expirada ou inválida, limpando localStorage.");
+        localStorage.removeItem(LOCAL_STORAGE_USER_ID);
+        localStorage.removeItem(LOCAL_STORAGE_USERNAME);
+        localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
+        setAppState(defaultInitialAppState);
+        setIsLoading(false); 
+      }
+    } catch (error) {
+      console.error("Erro ao ler sessão do localStorage:", error);
+      setAppState(defaultInitialAppState);
       setIsLoading(false);
     }
   }, []); 
 
-  // Effect for initial session check - runs only once on mount
-  useEffect(() => {
-    setIsLoading(true);
-    try {
-      const storedUser = localStorage.getItem(LOCAL_STORAGE_CURRENT_USER);
-      const storedExpiry = localStorage.getItem(LOCAL_STORAGE_SESSION_EXPIRY);
-
-      if (storedUser && storedExpiry) {
-        const expiryTime = parseInt(storedExpiry, 10);
-        if (Date.now() < expiryTime) {
-          // Session is valid
-          console.log("Sessão válida encontrada para:", storedUser);
-          setAppState(prevState => ({
-            ...prevState,
-            ...defaultUserSpecificData(getCurrentMonthYear(), storedUser), // Initialize user-specific parts
-            isAuthenticated: true,
-            currentUser: storedUser,
-          }));
-          // Data loading will be triggered by the next useEffect
-          return; 
-        } else {
-          // Session expired
-          console.log("Sessão expirada encontrada.");
-          localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER);
-          localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao ler sessão do localStorage:", error);
-      localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER);
-      localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
-    }
-    // If no valid session, ensure initial state and stop loading
-    setAppState(defaultInitialAppState); // Ensure clean slate
-    setIsLoading(false);
-  }, []); // Empty dependency array: run only once
-
-  // This useEffect handles loading data when authentication state changes to authenticated
-  // or when the current user changes.
-  useEffect(() => {
-    if (appState.isAuthenticated && appState.currentUser) {
-      // This condition ensures loadDataFromSheet is called after session restore or login
-      // and not unnecessarily if other parts of appState change.
-      console.log(`Usuário autenticado: ${appState.currentUser}. Disparando carregamento de dados.`);
-      loadDataFromSheet(appState.currentUser);
-    } else if (!appState.isAuthenticated && !appState.currentUser && !isLoading) { 
-      // If not authenticated and not already in an initial loading phase from session check
-      setAppState(defaultInitialAppState); 
-      // setIsLoading(false); // Already handled by session check or loadDataFromSheet finally
-    }
-  }, [appState.isAuthenticated, appState.currentUser, loadDataFromSheet]); // loadDataFromSheet is stable
-
-
-  const saveDataToSheet = useCallback(async (stateToSave: AppState, username: string | null) => {
-    if (!stateToSave.isAuthenticated || !username) {
-      console.log("Usuário não autenticado ou nome de usuário ausente. Dados não serão salvos.");
+  // Effect to load data when user is authenticated, or manage isLoading state
+   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false); // If Supabase not configured, not loading.
       return;
     }
-    
-    setIsSaving(true);
-    setError('');
-    
-    try {
-        const payloadToSave: UserSpecificData = {
-            data: stateToSave.data,
-            settings: stateToSave.settings,
-            activeMonthYear: stateToSave.activeMonthYear,
-        };
-        
-        const requestBody = {
-            action: 'save',
-            user: username,
-            payload: payloadToSave
-        };
-        
-        const response = await fetch(GOOGLE_SHEET_APP_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'text/plain;charset=utf-8', 
-            },
-            body: JSON.stringify(requestBody), 
-        });
 
-        if (!response.ok) {
-            let errorData;
-            try {
-                errorData = await response.json();
-            } catch(e) {
-                 errorData = { message: `Erro HTTP ao salvar: ${response.status} - ${response.statusText}`};
-            }
-            throw new Error(errorData.message || errorData.error || `Erro HTTP: ${response.status}`);
-        }
-
-        const resultText = await response.text();
-        let result;
-        try {
-            result = JSON.parse(resultText);
-        } catch (e) {
-            console.error("Falha ao analisar resposta JSON do salvamento:", resultText);
-            throw new Error("Resposta inválida do servidor ao salvar.");
-        }
-
-        if (result.status !== 'success') {
-            throw new Error(result.message || "Falha desconhecida ao salvar na Planilha Google.");
-        }
-        console.log(`Dados para ${username} salvos na Planilha Google com sucesso.`);
-
-    } catch (err: any) {
-        console.error(`Falha ao salvar dados para ${username} na Planilha Google:`, err);
-        setError(`Falha ao salvar dados: ${err.message}. Suas últimas alterações podem não ter sido persistidas.`);
-    } finally {
-        setIsSaving(false);
+    if (appState.isAuthenticated && appState.currentUser && appState.currentUsername) {
+      // If authenticated and data/settings are missing, then load them.
+      if (!appState.data || Object.keys(appState.data).length === 0 || !appState.settings) {
+        loadAllUserDataForUser(appState.currentUser, appState.currentUsername);
+      } else {
+        // Authenticated and data/settings are present. Ensure not loading.
+        setIsLoading(false);
+      }
+    } else if (!appState.isAuthenticated) {
+      // Not authenticated. Ensure not loading.
+      setIsLoading(false);
     }
-  }, []); 
+  }, [
+    appState.isAuthenticated, 
+    appState.currentUser, 
+    appState.currentUsername, 
+    appState.data,
+    appState.settings,
+    loadAllUserDataForUser,
+    isSupabaseConfigured
+  ]);
 
+  const login = useCallback(async (usernameInput: string, passwordInput: string): Promise<boolean> => {
+    if (!supabase || !isSupabaseConfigured) {
+      setError(SUPABASE_CONFIG_ERROR_MESSAGE);
+      setIsLoading(false);
+      return false;
+    }
+    setIsLoading(true);
+    clearError();
+    const username = usernameInput.trim().toLowerCase();
+    const password = passwordInput.trim();
+
+    try {
+      console.log(`Tentando login para usuário: ${username}`);
+      const { data: userData, error: fetchUserError } = await supabase
+        .from('users')
+        .select('id, username, password_hash')
+        .eq('username', username)
+        .maybeSingle(); 
+
+      if (fetchUserError) {
+        const baseUiMessage = "Erro ao conectar com o banco de dados";
+        let finalUiMessage = baseUiMessage;
+        console.error(
+            `${baseUiMessage}. Supabase error code: ${fetchUserError.code}, message: ${fetchUserError.message}, details: ${fetchUserError.details}, hint: ${fetchUserError.hint}`
+        );
+
+        if (fetchUserError.message && typeof fetchUserError.message === 'string' && fetchUserError.message.trim() !== "") {
+          finalUiMessage = `${baseUiMessage}. Detalhe: ${fetchUserError.message}. (Verifique o console para código do erro)`;
+        } else {
+          finalUiMessage = `${baseUiMessage}. Verifique o console para mais informações. (Código: ${fetchUserError.code || 'N/A'})`;
+        }
+        setError(finalUiMessage);
+        setIsLoading(false);
+        return false;
+      }
+      
+      if (!userData) { 
+        console.warn(`Usuário '${username}' não encontrado no banco de dados.`);
+        setError('Usuário não encontrado ou senha inválida.'); 
+        setIsLoading(false);
+        return false;
+      }
+      
+      console.log(`Usuário ${username} encontrado. Verificando senha...`);
+      if (userData.password_hash === password) {
+        console.log(`Senha correta para ${username}. Login bem-sucedido.`);
+        const expiryTime = Date.now() + SESSION_DURATION;
+        localStorage.setItem(LOCAL_STORAGE_USER_ID, userData.id);
+        localStorage.setItem(LOCAL_STORAGE_USERNAME, userData.username); 
+        localStorage.setItem(LOCAL_STORAGE_SESSION_EXPIRY, expiryTime.toString());
+
+        setAppState(prevState => ({ 
+          ...defaultInitialAppState, // Reset to default, then set auth
+          isAuthenticated: true,
+          currentUser: userData.id,
+          currentUsername: userData.username,
+        }));
+        // setIsLoading(true) is ALREADY true here from the start of login function.
+        // The useEffect watching appState.isAuthenticated will trigger loadAllUserDataForUser
+        // which will handle isLoading internally and set it to false in its finally block.
+        return true;
+      } else {
+        console.warn(`Senha inválida para o usuário: ${username}`);
+        setError('Usuário não encontrado ou senha inválida.'); 
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err: any) {
+      const baseUiMessage = "Erro inesperado durante o login";
+      let finalUiMessage = baseUiMessage;
+
+      console.error(`${baseUiMessage} (raw object):`, err);
+      if (err.code) console.error(`Supabase error code: ${err.code}`);
+      if (err.details) console.error(`Supabase error details: ${err.details}`);
+      if (err.hint) console.error(`Supabase error hint: ${err.hint}`);
+
+      if (err.message && typeof err.message === 'string' && err.message.trim() !== "") {
+        finalUiMessage = `${baseUiMessage}. Detalhes: ${err.message}. (Verifique o console)`;
+      } else {
+        finalUiMessage = `${baseUiMessage}. Verifique o console para mais informações.`;
+      }
+      
+      setError(finalUiMessage);
+      setIsLoading(false);
+      return false;
+    }
+  }, [isSupabaseConfigured]); // Added isSupabaseConfigured dependency
+
+  const logout = useCallback(() => {
+    console.log("Iniciando processo de logout.");
+    localStorage.removeItem(LOCAL_STORAGE_USER_ID);
+    localStorage.removeItem(LOCAL_STORAGE_USERNAME);
+    localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
+    setAppState(defaultInitialAppState); 
+    setIsLoading(false); 
+    setError(''); 
+    console.log("Usuário deslogado, sessão limpa. Estado resetado.");
+  }, []);
   
-  const getOrCreateMonthData = useCallback((monthYear: string, currentData: Record<string, MonthData>): MonthData => {
+  const getOrCreateLocalMonthData = useCallback((monthYear: string, currentData: Record<string, MonthData>, userId: string): MonthData => {
     if (currentData[monthYear]) {
       return currentData[monthYear];
     }
-    return createEmptyMonthData(monthYear);
+    return createEmptyMonthDataStructure(monthYear, userId);
   }, []);
 
-  const updateStateAndSave = useCallback((updater: (prevState: AppState) => AppState) => {
-    setAppState(prevState => {
-      const newState = updater(prevState);
-      if (newState.isAuthenticated && newState.currentUser) { 
-          saveDataToSheet(newState, newState.currentUser); 
-      }
-      return newState;
-    });
-  }, [saveDataToSheet]);
+  const addTransaction = useCallback(async (
+    monthYear: string, 
+    periodType: PeriodType, 
+    transactionData: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at'>
+  ) => {
+    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+    if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
+    setIsSaving(true); clearError();
+    try {
+      const monthDataId = await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear);
+      
+      const transactionToInsert = {
+        ...transactionData,
+        month_data_id: monthDataId,
+        user_id: appState.currentUser,
+        period_type: periodType,
+      };
 
+      const { data: newTransaction, error } = await supabase
+        .from('transactions')
+        .insert(transactionToInsert)
+        .select()
+        .single();
 
-  const addTransaction = useCallback((monthYear: string, periodType: PeriodType, transactionData: Omit<Transaction, 'id'>) => {
-    const newTransaction: Transaction = {
-      ...transactionData,
-      id: generateId(),
-    };
+      if (error || !newTransaction) throw error || new Error("Falha ao adicionar transação no Supabase.");
+
+      setAppState(prevState => {
+        const MData = getOrCreateLocalMonthData(monthYear, prevState.data, appState.currentUser!);
+        const updatedPeriodTransactions = [...MData[periodType].transactions, newTransaction as Transaction]
+            .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        const updatedMonthObject: MonthData = {
+          ...MData,
+          id: MData.id || monthDataId, 
+          [periodType]: { transactions: updatedPeriodTransactions }
+        };
+
+        return {
+          ...prevState,
+          data: { ...prevState.data, [monthYear]: updatedMonthObject },
+        };
+      });
+    } catch (err: any) {
+      console.error("Error adding transaction:", err);
+      setError(`Falha ao adicionar transação: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]); // Added isSupabaseConfigured
+
+  const deleteTransaction = useCallback(async (transactionId: string) => {
+    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+    if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
+    setIsSaving(true); clearError();
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId)
+        .eq('user_id', appState.currentUser); 
+
+      if (error) throw error;
+
+      setAppState(prevState => {
+        const newData = { ...prevState.data };
+        for (const monthYearKey in newData) {
+          const monthData = newData[monthYearKey];
+          let transactionFoundAndRemoved = false;
+          
+          const midMonthTransactions = monthData.midMonth.transactions.filter(t => t.id !== transactionId);
+          if (midMonthTransactions.length < monthData.midMonth.transactions.length) transactionFoundAndRemoved = true;
+          monthData.midMonth.transactions = midMonthTransactions;
+
+          if(!transactionFoundAndRemoved){
+            const endOfMonthTransactions = monthData.endOfMonth.transactions.filter(t => t.id !== transactionId);
+            if (endOfMonthTransactions.length < monthData.endOfMonth.transactions.length) transactionFoundAndRemoved = true;
+            monthData.endOfMonth.transactions = endOfMonthTransactions;
+          }
+          
+          if (transactionFoundAndRemoved) break; 
+        }
+        return { ...prevState, data: newData };
+      });
+    } catch (err: any) {
+      console.error("Error deleting transaction:", err);
+      setError(`Falha ao excluir transação: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, isSupabaseConfigured]); // Added isSupabaseConfigured
+
+  const updateTransaction = useCallback(async (updatedTransactionData: Transaction) => {
+    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+    if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
+    setIsSaving(true); clearError();
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, month_data_id, user_id, created_at, updated_at, ...updatePayload } = updatedTransactionData;
+      
+      const { data: newTransaction, error } = await supabase
+        .from('transactions')
+        .update(updatePayload)
+        .eq('id', id)
+        .eq('user_id', appState.currentUser) 
+        .select()
+        .single();
+
+      if (error || !newTransaction) throw error || new Error("Falha ao atualizar transação no Supabase.");
+      
+      setAppState(prevState => {
+        const newData = { ...prevState.data };
+        let found = false;
+        for (const monthYearKey in newData) {
+          const currentMonthEntry = newData[monthYearKey];
+          
+          const updatePeriod = (period: FinancialPeriodData) => {
+            const index = period.transactions.findIndex(t => t.id === newTransaction.id);
+            if (index !== -1) {
+              period.transactions[index] = newTransaction as Transaction;
+              period.transactions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+              found = true;
+            }
+          };
+          
+          updatePeriod(currentMonthEntry.midMonth);
+          if (found) break;
+          updatePeriod(currentMonthEntry.endOfMonth);
+          if (found) break;
+        }
+        return { ...prevState, data: newData };
+      });
+
+    } catch (err: any) {
+      console.error("Error updating transaction:", err);
+      setError(`Falha ao atualizar transação: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, isSupabaseConfigured]); // Added isSupabaseConfigured
+
+  const updateSettings = useCallback(async (newSettings: Partial<Omit<AppSettings, 'user_id'>>) => {
+    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+    if (!appState.currentUser || !appState.settings) { setError("Usuário não autenticado ou configurações não carregadas."); setIsSaving(false); return; }
+    setIsSaving(true); clearError();
+    try {
+      const settingsToUpdate = { ...appState.settings, ...newSettings, user_id: appState.currentUser };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { user_id, ...payload } = settingsToUpdate; 
+
+      const { data: updatedSettingsData, error } = await supabase
+        .from('settings')
+        .update(payload)
+        .eq('user_id', appState.currentUser)
+        .select()
+        .single();
+
+      if (error || !updatedSettingsData) throw error || new Error("Falha ao atualizar configurações no Supabase.");
+
+      setAppState(prevState => ({
+        ...prevState,
+        settings: updatedSettingsData as AppSettings,
+      }));
+    } catch (err: any) {
+      console.error("Error updating settings:", err);
+      setError(`Falha ao atualizar configurações: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, appState.settings, isSupabaseConfigured]); // Added isSupabaseConfigured
+
+  const updateMonthData = useCallback(async (monthYear: string, dataToUpdate: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit'>>) => {
+     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+    if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
+    setIsSaving(true); clearError();
+    try {
+      const monthRecordId = await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear);
+      
+      const { error } = await supabase
+        .from('months_data')
+        .update(dataToUpdate)
+        .eq('id', monthRecordId)
+        .eq('user_id', appState.currentUser);
+
+      if (error) throw error;
+
+      setAppState(prevState => {
+        const MData = getOrCreateLocalMonthData(monthYear, prevState.data, appState.currentUser!);
+        const updatedMonthObject = { ...MData, id: MData.id || monthRecordId, ...dataToUpdate };
+        return {
+          ...prevState,
+          data: { ...prevState.data, [monthYear]: updatedMonthObject },
+        };
+      });
+    } catch (err: any) {
+      console.error("Error updating month data:", err);
+      setError(`Falha ao atualizar dados do mês: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]); // Added isSupabaseConfigured
+  
+  const setActiveMonthYear = useCallback(async (monthYear: string) => {
+    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+    if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
     
-    updateStateAndSave(prevState => {
-      const monthData = getOrCreateMonthData(monthYear, prevState.data);
-      const updatedPeriodData = {
-        ...monthData[periodType],
-        transactions: [...monthData[periodType].transactions, newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-      };
-      const newData = {
-        ...prevState.data,
-        [monthYear]: {
-          ...monthData,
-          [periodType]: updatedPeriodData,
-        },
-      };
-      return { ...prevState, data: newData };
-    });
-  }, [getOrCreateMonthData, updateStateAndSave]);
-
-  const deleteTransaction = useCallback((monthYear: string, periodType: PeriodType, transactionId: string) => {
-    updateStateAndSave(prevState => {
-      const monthData = getOrCreateMonthData(monthYear, prevState.data);
-      const updatedTransactions = monthData[periodType].transactions.filter(t => t.id !== transactionId);
-      const updatedPeriodData = { ...monthData[periodType], transactions: updatedTransactions };
-      const newData = {
-        ...prevState.data,
-        [monthYear]: { ...monthData, [periodType]: updatedPeriodData },
-      };
-      return { ...prevState, data: newData };
-    });
-  }, [getOrCreateMonthData, updateStateAndSave]);
-
-  const updateTransaction = useCallback((monthYear: string, periodType: PeriodType, updatedTransaction: Transaction) => {
-    updateStateAndSave(prevState => {
-      const monthData = getOrCreateMonthData(monthYear, prevState.data);
-      const updatedTransactions = monthData[periodType].transactions.map(t =>
-        t.id === updatedTransaction.id ? updatedTransaction : t
-      ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      const updatedPeriodData = { ...monthData[periodType], transactions: updatedTransactions };
-      const newData = {
-        ...prevState.data,
-        [monthYear]: { ...monthData, [periodType]: updatedPeriodData },
-      };
-      return { ...prevState, data: newData };
-    });
-  }, [getOrCreateMonthData, updateStateAndSave]);
-  
-  const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
-    updateStateAndSave(prevState => {
-      const updatedSettings = { ...prevState.settings, ...newSettings };
-      return { ...prevState, settings: updatedSettings };
-    });
-  }, [updateStateAndSave]);
-
-  const updateMonthData = useCallback((monthYear: string, dataToUpdate: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit'>>) => {
-     updateStateAndSave(prevState => {
-      const currentMonth = getOrCreateMonthData(monthYear, prevState.data);
-      const updatedMonth = { ...currentMonth, ...dataToUpdate };
-      const newData = { ...prevState.data, [monthYear]: updatedMonth };
-      return { ...prevState, data: newData };
-    });
-  }, [getOrCreateMonthData, updateStateAndSave]);
-  
-  const setActiveMonthYear = useCallback((monthYear: string) => {
-    updateStateAndSave(prevState => {
+    setAppState(prevState => {
       let updatedData = { ...prevState.data };
-      if (!updatedData[monthYear]) {
-        updatedData[monthYear] = createEmptyMonthData(monthYear);
+      if (!updatedData[monthYear] && prevState.currentUser) { 
+        updatedData[monthYear] = createEmptyMonthDataStructure(monthYear, prevState.currentUser);
       }
       return { ...prevState, activeMonthYear: monthYear, data: updatedData };
     });
-  }, [updateStateAndSave]);
 
- const getCurrentMonthData = useCallback((): MonthData => {
-    const currentData = appState.data[appState.activeMonthYear];
-    if (currentData) {
-        return currentData;
+    setIsSaving(true); clearError();
+    try {
+      // Check if active_month record exists, if not, insert, otherwise update
+      let { data: existingActiveMonth, error: fetchActiveError } = await supabase
+        .from('active_months')
+        .select('user_id')
+        .eq('user_id', appState.currentUser)
+        .maybeSingle();
+
+      if (fetchActiveError) throw fetchActiveError;
+
+      if (existingActiveMonth) {
+        const { error: updateError } = await supabase
+          .from('active_months')
+          .update({ active_month_year: monthYear })
+          .eq('user_id', appState.currentUser);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('active_months')
+          .insert({ user_id: appState.currentUser, active_month_year: monthYear });
+        if (insertError) throw insertError;
+      }
+      
+      // Ensure the month_data record exists in Supabase if we are setting it active
+      if (!appState.data[monthYear]?.id && appState.currentUser) {
+         await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear); 
+      }
+
+    } catch (err:any) {
+        console.error("Error setting active month in Supabase:", err);
+        setError(`Falha ao definir mês ativo no servidor: ${err.message}`);
+    } finally {
+      setIsSaving(false);
     }
-    return createEmptyMonthData(appState.activeMonthYear);
-  }, [appState.activeMonthYear, appState.data]);
+  }, [appState.currentUser, appState.data, getOrCreateSupabaseMonthRecord, isSupabaseConfigured]); // Added isSupabaseConfigured
 
+  const getCurrentMonthData = useCallback((): MonthData | null => {
+    if (!appState.activeMonthYear || !appState.data[appState.activeMonthYear]) {
+       if (appState.currentUser && appState.activeMonthYear) {
+        // Return a temporary empty structure if data is truly missing but should exist
+        return createEmptyMonthDataStructure(appState.activeMonthYear, appState.currentUser);
+      }
+      return null;
+    }
+    return appState.data[appState.activeMonthYear];
+  }, [appState.activeMonthYear, appState.data, appState.currentUser]);
 
   const getTransactionsForPeriod = useCallback((monthYear: string, periodType: PeriodType, transactionTypeParam?: TransactionType): Transaction[] => {
     const monthData = appState.data[monthYear];
-    if (!monthData || !monthData[periodType]) {
-      return [];
-    }
+    if (!monthData || !monthData[periodType]) return [];
+    
     const transactions = monthData[periodType].transactions || [];
     if (transactionTypeParam) {
       return transactions.filter(t => t.type === transactionTypeParam);
@@ -358,11 +779,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (transactionTypeParam) {
       transactions = transactions.filter(t => t.type === transactionTypeParam);
     }
-    return transactions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return transactions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()); 
   }, [appState.data]);
 
   const getMonthlySummary = useCallback((monthYear: string) => {
-    const monthDataToUse = appState.data[monthYear] || createEmptyMonthData(monthYear);
+    const monthDataToUse = appState.data[monthYear] || createEmptyMonthDataStructure(monthYear, appState.currentUser || undefined);
     
     const allIncome = getAllTransactionsForMonth(monthYear, TransactionType.INCOME);
     const allExpenses = getAllTransactionsForMonth(monthYear, TransactionType.EXPENSE);
@@ -376,7 +797,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .filter(t => t.category === "Cartão de Crédito")
       .reduce((sum, t) => sum + t.amount, 0);
     
-    const creditCardRemainingLimit = monthDataToUse.creditCardLimit !== undefined 
+    const creditCardRemainingLimit = monthDataToUse.creditCardLimit !== undefined && monthDataToUse.creditCardLimit !== null
       ? monthDataToUse.creditCardLimit - creditCardSpent 
       : undefined;
 
@@ -393,52 +814,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       creditCardRemainingLimit,
       totalBenefits,
     };
-  }, [appState.data, getAllTransactionsForMonth]); 
-
-  const login = useCallback(async (usernameInput: string, passwordInput: string): Promise<boolean> => {
-    setError(''); 
-    setIsLoading(true); // Start loading process for login attempt
-    const username = usernameInput.trim();
-    const password = passwordInput.trim();
-
-    let loggedInUser: string | null = null;
-
-    if (username === 'admin' && password === '2391') {
-      loggedInUser = 'admin';
-    } else if (username === 'gilson' && password === '1234') {
-      loggedInUser = 'gilson';
-    }
-
-    if (loggedInUser) {
-      const expiryTime = Date.now() + SESSION_DURATION;
-      localStorage.setItem(LOCAL_STORAGE_CURRENT_USER, loggedInUser);
-      localStorage.setItem(LOCAL_STORAGE_SESSION_EXPIRY, expiryTime.toString());
-      
-      const initialDataForUser = defaultUserSpecificData(getCurrentMonthYear(), loggedInUser);
-      
-      setAppState({ 
-        ...initialDataForUser,
-        isAuthenticated: true,
-        currentUser: loggedInUser,
-      });
-      // loadDataFromSheet will be called by the useEffect due to isAuthenticated and currentUser changing
-      // setIsLoading(false) will be handled by loadDataFromSheet's finally block
-      return true;
-    }
-    setError('Usuário ou senha inválidos.');
-    setAppState(prevState => ({...prevState, isAuthenticated: false, currentUser: null}));
-    setIsLoading(false); // Login failed, stop loading
-    return false;
-  }, []); // loadDataFromSheet is not a direct dep here, but part of the flow triggered by state change
-  
-  const logout = useCallback(() => {
-    localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER);
-    localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
-    setAppState({ ...defaultInitialAppState }); 
-    setIsLoading(false); // Ensure loading stops on logout
-    console.log("Usuário deslogado, sessão limpa.");
-  }, []); 
-
+  }, [appState.data, appState.currentUser, getAllTransactionsForMonth]);
 
   return (
     <AppContext.Provider value={{ 

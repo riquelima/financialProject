@@ -22,7 +22,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onEdit, 
           <p className="text-xs text-gray-400">{transaction.category} - {formatDate(transaction.date)}</p>
         </div>
         <p className={`text-lg font-bold ${isIncome ? `text-${COLORS.income}` : `text-${COLORS.expense}`}`}>
-          {isIncome ? '+' : '-'} {formatCurrency(transaction.amount, settings.currencySymbol)}
+          {isIncome ? '+' : '-'} {formatCurrency(transaction.amount, settings?.currencySymbol || 'R$')}
         </p>
       </div>
       <div className="mt-3 flex justify-end space-x-2">

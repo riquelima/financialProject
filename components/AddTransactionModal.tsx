@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { useAppContext } from '../hooks/useAppContext';
+import { useAppContext } from '../hooks/useAppContext'; // Caminho já estava correto, reafirmando.
 import { Transaction, TransactionType, PeriodType, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types';
 import CategorySelect from './CategorySelect';
-// import { COLORS } from '../constants'; // COLORS can be removed if using CSS vars directly
 import { formatDate } from '../utils/formatters';
 
 
@@ -47,12 +47,30 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
       return;
     }
 
-    const transactionData = { description, amount: numericAmount, category, type: transactionType, date };
+    // Base transaction data matches the Omit<> type in addTransaction context function
+    const baseTransactionData = { 
+        description, 
+        amount: numericAmount, 
+        category, 
+        type: transactionType, 
+        date,
+        period_type: periodType // Added period_type as it's now part of the base transaction
+    };
 
     if (transactionToEdit) {
-      updateTransaction(activeMonthYear, periodType, { ...transactionData, id: transactionToEdit.id });
+      // For update, we need the full transaction object including ids
+      const fullTransactionToUpdate: Transaction = {
+        ...baseTransactionData,
+        id: transactionToEdit.id,
+        month_data_id: transactionToEdit.month_data_id,
+        user_id: transactionToEdit.user_id,
+        // created_at and updated_at are handled by DB/Supabase
+      };
+      updateTransaction(fullTransactionToUpdate);
     } else {
-      addTransaction(activeMonthYear, periodType, transactionData);
+      // addTransaction expects Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at'>
+      // which baseTransactionData now satisfies
+      addTransaction(activeMonthYear, periodType, baseTransactionData);
     }
     onClose();
   };
@@ -105,7 +123,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
         </div>
         
         <div>
-          <label htmlFor="amount" className={labelBaseClasses}>Valor ({settings.currencySymbol})</label>
+          <label htmlFor="amount" className={labelBaseClasses}>Valor ({settings?.currencySymbol || 'R$'})</label>
           <input
             type="number"
             id="amount"

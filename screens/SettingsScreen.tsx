@@ -5,49 +5,66 @@ import { CogIcon, COLORS } from '../constants';
 import { getMonthName } from '../utils/formatters';
 
 const SettingsScreen: React.FC = () => {
-  const { settings, updateSettings, activeMonthYear, updateMonthData, getCurrentMonthData, logout } = useAppContext(); // Added logout
+  const { settings, updateSettings, activeMonthYear, updateMonthData, getCurrentMonthData, logout, currentUsername } = useAppContext();
   
-  const [userName, setUserName] = useState(settings.userName || '');
-  const [currencySymbol, setCurrencySymbol] = useState(settings.currencySymbol);
+  const [userNameDisplay, setUserNameDisplay] = useState('');
+  const [currencySymbol, setCurrencySymbol] = useState('R$');
   
-  const currentMonthData = getCurrentMonthData();
-  const [openingBalance, setOpeningBalance] = useState(String(currentMonthData.openingBalance || 0));
-  const [creditCardLimit, setCreditCardLimit] = useState(String(currentMonthData.creditCardLimit || ''));
+  const currentMonthData = getCurrentMonthData(); // Can be null initially
+  const [openingBalance, setOpeningBalance] = useState('');
+  const [creditCardLimit, setCreditCardLimit] = useState('');
 
   useEffect(() => {
-    setUserName(settings.userName || '');
-    setCurrencySymbol(settings.currencySymbol);
-  }, [settings]);
+    if (settings) {
+      setUserNameDisplay(settings.userNameDisplay || currentUsername || ''); // Fallback to login username
+      setCurrencySymbol(settings.currencySymbol);
+    }
+  }, [settings, currentUsername]);
 
   useEffect(() => {
-    const monthData = getCurrentMonthData(); 
-    setOpeningBalance(String(monthData.openingBalance || 0));
-    setCreditCardLimit(String(monthData.creditCardLimit || ''));
-  }, [activeMonthYear, getCurrentMonthData, settings]); // Added settings as a dependency in case currencySymbol changes externally.
+    if (currentMonthData) {
+      setOpeningBalance(String(currentMonthData.openingBalance || 0));
+      setCreditCardLimit(String(currentMonthData.creditCardLimit || ''));
+    } else {
+      // If currentMonthData is null (e.g., during initial load or if activeMonth has no data yet)
+      // set to default/empty strings.
+      setOpeningBalance('0');
+      setCreditCardLimit('');
+    }
+  }, [activeMonthYear, currentMonthData]);
+
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettings({ userName: userName || undefined, currencySymbol });
+    if (!settings) { // Should not happen if UI is rendered, but good check
+        alert("Configurações ainda não carregadas.");
+        return;
+    }
+    updateSettings({ userNameDisplay: userNameDisplay || undefined, currencySymbol });
     
     const numOpeningBalance = parseFloat(openingBalance) || 0;
-    const numCreditCardLimit = creditCardLimit ? parseFloat(creditCardLimit) : undefined;
+    // Ensure creditCardLimit is explicitly null if empty, or a number if provided
+    const numCreditCardLimit = creditCardLimit.trim() === '' ? null : parseFloat(creditCardLimit);
+
 
     updateMonthData(activeMonthYear, { 
       openingBalance: numOpeningBalance, 
-      creditCardLimit: numCreditCardLimit 
+      creditCardLimit: numCreditCardLimit === null ? undefined : numCreditCardLimit, 
     });
-    // alert('Configurações salvas!'); // Removed. isSaving indicator is present.
   };
 
   const handleLogout = () => {
-    if (window.confirm('Tem certeza que deseja sair?')) { // Simplified message
+    if (window.confirm('Tem certeza que deseja sair?')) {
       logout();
-      // Navigation will be handled by App.tsx due to isAuthenticated changing
     }
   };
   
   const inputBaseClasses = `w-full bg-${COLORS.cardBackgroundLighter} border border-slate-600 text-${COLORS.textPrimary} placeholder-${COLORS.textSecondary} text-sm rounded-lg focus:ring-${COLORS.primary} focus:border-${COLORS.primary} block p-3 transition-colors duration-200 focus:outline-none focus:shadow-outline-blue`;
   const labelBaseClasses = `block text-sm font-medium text-${COLORS.textSecondary} mb-1`;
+
+  if (!settings) {
+    return <div className="p-4 text-center" style={{color: 'var(--text-secondary)'}}>Carregando configurações...</div>;
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-8">
@@ -61,14 +78,14 @@ const SettingsScreen: React.FC = () => {
           <h2 className={`text-xl font-semibold text-${COLORS.textAccent} mb-4 border-b border-slate-700 pb-2`}>Configurações Gerais</h2>
           <div className="space-y-4">
             <div>
-              <label htmlFor="userName" className={labelBaseClasses}>Nome do Usuário (Opcional)</label>
+              <label htmlFor="userNameDisplay" className={labelBaseClasses}>Nome de Exibição (Opcional)</label>
               <input
                 type="text"
-                id="userName"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                id="userNameDisplay"
+                value={userNameDisplay}
+                onChange={(e) => setUserNameDisplay(e.target.value)}
                 className={inputBaseClasses}
-                placeholder="Seu nome"
+                placeholder="Seu nome para exibição"
               />
             </div>
             <div>
@@ -92,20 +109,20 @@ const SettingsScreen: React.FC = () => {
           </h2>
           <div className="space-y-4">
             <div>
-              <label htmlFor="openingBalance" className={labelBaseClasses}>Saldo Inicial do Mês ({settings.currencySymbol})</label>
+              <label htmlFor="openingBalance" className={labelBaseClasses}>Saldo Inicial do Mês ({currencySymbol})</label>
               <input
                 type="number"
                 id="openingBalance"
                 value={openingBalance}
                 onChange={(e) => setOpeningBalance(e.target.value)}
-                min="0"
+                min="0" 
                 step="0.01"
                 className={inputBaseClasses}
                 placeholder="0,00"
               />
             </div>
             <div>
-              <label htmlFor="creditCardLimit" className={labelBaseClasses}>Limite Total do Cartão de Crédito ({settings.currencySymbol}) (Opcional)</label>
+              <label htmlFor="creditCardLimit" className={labelBaseClasses}>Limite Total do Cartão de Crédito ({currencySymbol}) (Opcional)</label>
               <input
                 type="number"
                 id="creditCardLimit"
@@ -132,11 +149,11 @@ const SettingsScreen: React.FC = () => {
 
       <div className={`p-6 bg-${COLORS.cardBackground} rounded-xl shadow-lg`}>
           <h3 className={`text-lg font-semibold text-${COLORS.textPrimary} mb-2`}>Tema</h3>
-          <p className={`text-sm text-${COLORS.textSecondary}`}>Atualmente, o aplicativo utiliza o tema escuro. A opção de alternar para o tema claro será adicionada em futuras atualizações.</p>
+          <p className={`text-sm text-${COLORS.textSecondary}`}>Atualmente, o aplicativo utiliza o tema {settings.theme}. A opção de alternar temas será adicionada em futuras atualizações.</p>
       </div>
       <div className={`p-6 bg-${COLORS.cardBackground} rounded-xl shadow-lg`}>
           <h3 className={`text-lg font-semibold text-${COLORS.textPrimary} mb-2`}>Backup e Sincronização</h3>
-          <p className={`text-sm text-${COLORS.textSecondary}`}>Seus dados são salvos automaticamente na Planilha Google associada à sua conta quando você faz login e realiza alterações.</p>
+          <p className={`text-sm text-${COLORS.textSecondary}`}>Seus dados são salvos automaticamente no Supabase quando você realiza alterações.</p>
       </div>
 
       <div className={`p-6 bg-${COLORS.cardBackground} rounded-xl shadow-lg`}>

@@ -1,26 +1,34 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../hooks/useAppContext';
 import { APP_NAME, DollarSignIcon } from '../constants'; 
 
 const LoginScreen: React.FC = () => {
-  const { login, error: contextError } = useAppContext();
+  const { login, error: contextError, isLoading } = useAppContext(); 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
 
   useEffect(() => {
     if (contextError) {
-      setLocalError(contextError);
+      if (typeof contextError === 'string') {
+        setLocalError(contextError);
+      } else {
+        // Fallback se contextError não for uma string (o que não deveria acontecer)
+        setLocalError('Ocorreu um erro inesperado. Verifique o console.');
+        console.warn("LoginScreen: contextError não é uma string:", contextError);
+      }
+    } else {
+      setLocalError(''); 
     }
   }, [contextError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; 
     setLocalError(''); 
-    const success = await login(username, password);
-    if (!success && !contextError) { 
-      setLocalError('Usuário ou senha inválidos. Tente novamente.');
-    }
+    await login(username, password); 
   };
 
   return (
@@ -53,7 +61,8 @@ const LoginScreen: React.FC = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full bg-[var(--deep-gray-2)] border border-transparent text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-[10px] focus:border-[var(--emerald-lime)] focus:ring-2 focus:ring-[var(--emerald-lime)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus"
+              disabled={isLoading} 
+              className="w-full bg-[var(--deep-gray-2)] border border-transparent text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-[10px] focus:border-[var(--emerald-lime)] focus:ring-2 focus:ring-[var(--emerald-lime)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50"
               placeholder="Nome de usuário"
               style={{borderColor: 'rgba(255,255,255,0.1)'}}
             />
@@ -73,13 +82,14 @@ const LoginScreen: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-[var(--deep-gray-2)] border border-transparent text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-[10px] focus:border-[var(--emerald-lime)] focus:ring-2 focus:ring-[var(--emerald-lime)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus"
+              disabled={isLoading} 
+              className="w-full bg-[var(--deep-gray-2)] border border-transparent text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-[10px] focus:border-[var(--emerald-lime)] focus:ring-2 focus:ring-[var(--emerald-lime)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50"
               placeholder="Sua senha"
               style={{borderColor: 'rgba(255,255,255,0.1)'}}
             />
           </div>
 
-          {localError && (
+          {localError && !isLoading && ( 
             <p 
               className="text-sm text-center p-2.5 rounded-[10px]"
               style={{ backgroundColor: 'rgba(255,107,107,0.1)', color: 'var(--coral-red)'}}
@@ -91,10 +101,16 @@ const LoginScreen: React.FC = () => {
           <div>
             <button
               type="submit"
-              className="w-full py-3.5 px-5 text-white font-semibold rounded-[10px] transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-[var(--amethyst-purple)]/50 shadow-lg hover:shadow-xl button-gradient-hover"
+              disabled={isLoading} 
+              className="w-full py-3.5 px-5 text-white font-semibold rounded-[10px] transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-[var(--amethyst-purple)]/50 shadow-lg hover:shadow-xl button-gradient-hover disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               style={{ background: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple))', backgroundSize: '200% auto' }}
             >
-              Entrar
+              {isLoading ? (
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : "Entrar"}
             </button>
           </div>
         </form>

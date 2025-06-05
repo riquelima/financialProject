@@ -14,12 +14,12 @@ interface FinancialPeriodScreenProps {
 }
 
 const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodType }) => {
-  const { activeMonthYear, settings, getTransactionsForPeriod, deleteTransaction, getCurrentMonthData } = useAppContext();
+  const { activeMonthYear, settings, getTransactionsForPeriod, deleteTransaction } = useAppContext(); // Removed getCurrentMonthData as it's not directly used here for rendering
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<TransactionType>(TransactionType.EXPENSE); // Default to expenses
 
-  const currentMonthData = getCurrentMonthData();
+  const currencySymbol = settings?.currencySymbol || 'R$';
   
   const transactions = useMemo(() => {
     return getTransactionsForPeriod(activeMonthYear, periodType, activeTab);
@@ -40,7 +40,8 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
 
   const handleDeleteTransaction = (transactionId: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
-      deleteTransaction(activeMonthYear, periodType, transactionId);
+      // The deleteTransaction in context now only needs the transactionId
+      deleteTransaction(transactionId);
     }
   };
   
@@ -88,15 +89,15 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
       <div className={`grid grid-cols-3 gap-2 text-center p-3 bg-${COLORS.cardBackgroundLighter} rounded-lg shadow`}>
         <div>
           <p className={`text-xs text-${COLORS.textSecondary}`}>Entradas Período</p>
-          <p className={`font-semibold text-lg text-${COLORS.income}`}>{formatCurrency(periodIncome, settings.currencySymbol)}</p>
+          <p className={`font-semibold text-lg text-${COLORS.income}`}>{formatCurrency(periodIncome, currencySymbol)}</p>
         </div>
         <div>
           <p className={`text-xs text-${COLORS.textSecondary}`}>Saídas Período</p>
-          <p className={`font-semibold text-lg text-${COLORS.expense}`}>{formatCurrency(periodExpenses, settings.currencySymbol)}</p>
+          <p className={`font-semibold text-lg text-${COLORS.expense}`}>{formatCurrency(periodExpenses, currencySymbol)}</p>
         </div>
         <div>
           <p className={`text-xs text-${COLORS.textSecondary}`}>Saldo Período</p>
-          <p className={`font-semibold text-lg ${periodBalance >= 0 ? `text-${COLORS.income}` : `text-${COLORS.expense}`}`}>{formatCurrency(periodBalance, settings.currencySymbol)}</p>
+          <p className={`font-semibold text-lg ${periodBalance >= 0 ? `text-${COLORS.income}` : `text-${COLORS.expense}`}`}>{formatCurrency(periodBalance, currencySymbol)}</p>
         </div>
       </div>
 

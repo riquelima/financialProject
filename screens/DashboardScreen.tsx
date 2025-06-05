@@ -1,7 +1,7 @@
 
 
 import React, { useState, useMemo } from 'react';
-import { useAppContext } from '../hooks/useAppContext';
+import { useAppContext } from '../hooks/useAppContext'; // Caminho já estava correto, reafirmando.
 import { formatCurrency, getMonthName } from '../utils/formatters';
 import SummaryCard from '../components/SummaryCard';
 import MonthNavigator from '../components/MonthNavigator';
@@ -24,7 +24,9 @@ const DashboardScreen: React.FC = () => {
   const [isMonthlyChartVisible, setIsMonthlyChartVisible] = useState(false); // State for new chart
 
   const summary = getMonthlySummary(activeMonthYear);
-  const currentMonthData = getCurrentMonthData();
+  const currentMonthData = getCurrentMonthData(); // This can be null now
+
+  const currencySymbol = settings?.currencySymbol || 'R$';
 
   const incomeTransactions = useMemo(() => {
     if (!isProventosModalOpen) return [];
@@ -46,6 +48,18 @@ const DashboardScreen: React.FC = () => {
   const openDebitosModal = () => setIsDebitosModalOpen(true);
   const closeDebitosModal = () => setIsDebitosModalOpen(false);
 
+  if (!settings || !currentMonthData) {
+    // Render loading state or minimal UI if essential data isn't ready
+    // This check might be redundant if GlobalFeedback handles loading state well
+    // but it's good for ensuring data presence before rendering complex components.
+    return (
+      <div className="p-4 text-center" style={{color: 'var(--text-secondary)'}}>
+        Carregando dados do dashboard...
+      </div>
+    );
+  }
+
+
   return (
     <div className="p-4 space-y-6">
       <MonthNavigator className="mb-3" />
@@ -53,15 +67,15 @@ const DashboardScreen: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <SummaryCard 
           title="Saldo em Conta" 
-          value={formatCurrency(summary.accountBalance, settings.currencySymbol)} 
-          icon={<DollarSignIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />} // Changed HomeIcon to DollarSignIcon
+          value={formatCurrency(summary.accountBalance, currencySymbol)} 
+          icon={<DollarSignIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
           gradientBg={COLORS.gradientBalance}
           valueColor={'var(--absolute-black)'} 
-          subValue={`Saldo Inicial: ${formatCurrency(currentMonthData.openingBalance, settings.currencySymbol)}`}
+          subValue={`Saldo Inicial: ${formatCurrency(currentMonthData.openingBalance || 0, currencySymbol)}`}
         />
         <SummaryCard 
           title="Total Restante no Mês" 
-          value={formatCurrency(summary.netSavings, settings.currencySymbol)} 
+          value={formatCurrency(summary.netSavings, currencySymbol)} 
           icon={<DollarSignIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
           valueColor={summary.netSavings >= 0 ? 'var(--emerald-lime)' : 'var(--coral-red)'}
           borderColor={summary.netSavings >= 0 ? 'var(--emerald-lime)' : 'var(--coral-red)'}
@@ -72,7 +86,7 @@ const DashboardScreen: React.FC = () => {
         <SummaryCard 
           onClick={openProventosModal}
           title="Total de Proventos" 
-          value={formatCurrency(summary.totalIncome, settings.currencySymbol)} 
+          value={formatCurrency(summary.totalIncome, currencySymbol)} 
           icon={<TrendingUpIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />}
           valueColor={'var(--emerald-lime)'}
           borderColor={'var(--emerald-lime)'}
@@ -80,7 +94,7 @@ const DashboardScreen: React.FC = () => {
         <SummaryCard 
           onClick={openDebitosModal}
           title="Total de Débitos" 
-          value={formatCurrency(summary.totalExpenses, settings.currencySymbol)} 
+          value={formatCurrency(summary.totalExpenses, currencySymbol)} 
           icon={<BarChart2Icon className="w-5 h-5 transform scale-y-[-1] group-hover:scale-[-1.1,1.1] transition-transform" />}
           valueColor={'var(--coral-red)'}
           borderColor={'var(--coral-red)'}
@@ -100,29 +114,29 @@ const DashboardScreen: React.FC = () => {
         <div className="mt-5 space-y-6"> {/* Container for both charts */}
           <MonthlySummaryChart 
             summary={{ totalIncome: summary.totalIncome, totalExpenses: summary.totalExpenses }}
-            currencySymbol={settings.currencySymbol}
+            currencySymbol={currencySymbol}
           />
           <ExpensePieChart 
             expenseTransactions={allExpenseTransactions}
-            currencySymbol={settings.currencySymbol}
+            currencySymbol={currencySymbol}
           />
         </div>
       )}
       
-      {currentMonthData.creditCardLimit !== undefined && currentMonthData.creditCardLimit > 0 && (
+      {currentMonthData.creditCardLimit !== undefined && currentMonthData.creditCardLimit !== null && currentMonthData.creditCardLimit > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5"> {/* Ensure consistent spacing */}
           <SummaryCard 
             title="Limite do Cartão" 
-            value={formatCurrency(currentMonthData.creditCardLimit, settings.currencySymbol)} 
+            value={formatCurrency(currentMonthData.creditCardLimit, currencySymbol)} 
             valueColor={'var(--soft-magenta)'}
             borderColor={'var(--soft-magenta)'}
           />
           <SummaryCard 
             title="Limite Restante Cartão" 
-            value={formatCurrency(summary.creditCardRemainingLimit !== undefined ? summary.creditCardRemainingLimit : 0, settings.currencySymbol)}
-            subValue={`Gasto: ${formatCurrency(summary.creditCardSpent, settings.currencySymbol)}`}
-            valueColor={summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit >=0 ? 'var(--text-primary)' : 'var(--coral-red)'}
-            borderColor={summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit >=0 ? 'var(--amethyst-purple)' : 'var(--coral-red)'}
+            value={formatCurrency(summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit !== null ? summary.creditCardRemainingLimit : 0, currencySymbol)}
+            subValue={`Gasto: ${formatCurrency(summary.creditCardSpent, currencySymbol)}`}
+            valueColor={summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit !== null && summary.creditCardRemainingLimit >=0 ? 'var(--text-primary)' : 'var(--coral-red)'}
+            borderColor={summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit !== null && summary.creditCardRemainingLimit >=0 ? 'var(--amethyst-purple)' : 'var(--coral-red)'}
           />
         </div>
       )}
@@ -143,7 +157,7 @@ const DashboardScreen: React.FC = () => {
         onClose={closeProventosModal}
         title={`Proventos de ${getMonthName(activeMonthYear)}`}
         transactions={incomeTransactions}
-        currencySymbol={settings.currencySymbol}
+        currencySymbol={currencySymbol}
         transactionTypeForColor={TransactionType.INCOME}
       />
 
@@ -152,7 +166,7 @@ const DashboardScreen: React.FC = () => {
         onClose={closeDebitosModal}
         title={`Débitos de ${getMonthName(activeMonthYear)}`}
         transactions={allExpenseTransactions}
-        currencySymbol={settings.currencySymbol}
+        currencySymbol={currencySymbol}
         transactionTypeForColor={TransactionType.EXPENSE}
       />
     </div>

@@ -9,7 +9,7 @@ interface TransactionListModalProps {
   onClose: () => void;
   title: string;
   transactions: Transaction[];
-  currencySymbol: string;
+  currencySymbol: string; // Keep as required, but ensure App.tsx passes a valid fallback
   transactionTypeForColor?: TransactionType; // To color the amounts
 }
 
@@ -18,11 +18,12 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
   onClose, 
   title, 
   transactions, 
-  currencySymbol,
+  currencySymbol, // Use directly, ensure parent provides a fallback
   transactionTypeForColor
 }) => {
   if (!isOpen) return null;
 
+  // amountColorClass logic remains the same, using transactionTypeForColor
   const amountColorClass = transactionTypeForColor === TransactionType.INCOME 
     ? `text-${COLORS.income}` 
     : transactionTypeForColor === TransactionType.EXPENSE 
