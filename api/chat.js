@@ -1,4 +1,3 @@
-
 // File: api/chat.js
 // This is a Vercel Serverless Function
 // To use it:
