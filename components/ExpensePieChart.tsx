@@ -35,12 +35,12 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseTransactions, 
     const totalExpenses = Array.from(categoryMap.values()).reduce((sum, amount) => sum + amount, 0);
     if (totalExpenses === 0) return [];
 
-    let currentAngle = -90; // Start at the top of the circle
+    let currentAngle = -90; 
     const slices: PieSliceData[] = [];
     
     let colorIndex = 0;
     Array.from(categoryMap.entries())
-      .sort(([, a], [, b]) => b - a) // Sort by amount descending
+      .sort(([, a], [, b]) => b - a) 
       .forEach(([category, amount]) => {
         const percentage = (amount / totalExpenses) * 100;
         const angle = (amount / totalExpenses) * 360;
@@ -49,10 +49,9 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseTransactions, 
         const color = PIE_CHART_COLORS[colorIndex % PIE_CHART_COLORS.length];
         colorIndex++;
 
-        // Calculate SVG path for the slice
         const radius = 100;
-        const cx = 120; // Center x of the SVG viewbox / 2
-        const cy = 120; // Center y of the SVG viewbox / 2
+        const cx = 120; 
+        const cy = 120; 
 
         const startX = cx + radius * Math.cos(startAngle * Math.PI / 180);
         const startY = cy + radius * Math.sin(startAngle * Math.PI / 180);
@@ -77,19 +76,25 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseTransactions, 
     return slices;
   }, [expenseTransactions]);
 
+  const cardBgStyle = { backgroundColor: 'var(--secondary-bg)' };
+  const textPrimaryStyle = { color: 'var(--text-primary)' };
+  const textSecondaryStyle = { color: 'var(--text-secondary)' };
+  const legendItemBgStyle = { backgroundColor: 'var(--tertiary-bg)' };
+
+
   if (chartData.length === 0) {
     return (
-      <div className={`p-6 bg-${COLORS.cardBackground} rounded-xl shadow-lg text-center`}>
-        <PieChartIcon className={`w-12 h-12 mx-auto text-${COLORS.textSecondary} mb-3`} />
-        <h3 className={`text-lg font-semibold text-${COLORS.textPrimary} mb-1`}>Distribuição de Débitos</h3>
-        <p className={`text-${COLORS.textSecondary}`}>Nenhum débito registrado para este mês.</p>
+      <div style={cardBgStyle} className="p-6 rounded-xl shadow-lg text-center">
+        <PieChartIcon className="w-12 h-12 mx-auto mb-3" style={textSecondaryStyle} />
+        <h3 className="text-lg font-semibold mb-1" style={textPrimaryStyle}>Distribuição de Débitos</h3>
+        <p style={textSecondaryStyle}>Nenhum débito registrado para este mês.</p>
       </div>
     );
   }
 
   return (
-    <div className={`p-4 sm:p-6 bg-${COLORS.cardBackground} rounded-xl shadow-lg`}>
-      <h3 className={`text-xl font-semibold text-${COLORS.textPrimary} mb-4 text-center`}>Distribuição de Débitos por Categoria</h3>
+    <div style={cardBgStyle} className="p-4 sm:p-6 rounded-xl shadow-lg">
+      <h3 className="text-xl font-semibold mb-4 text-center" style={textPrimaryStyle}>Distribuição de Débitos por Categoria</h3>
       <div className="flex flex-col md:flex-row items-center justify-center md:space-x-6 space-y-4 md:space-y-0">
         <div className="relative w-full max-w-xs sm:max-w-sm md:w-2/3 mx-auto">
           <svg viewBox="0 0 240 240" className="w-full h-auto" aria-label="Gráfico de pizza de despesas">
@@ -107,14 +112,14 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseTransactions, 
             ))}
           </svg>
         </div>
-        <div className={`w-full md:w-1/3 space-y-1 text-xs max-h-60 overflow-y-auto pr-2`}>
+        <div className="w-full md:w-1/3 space-y-1 text-xs max-h-60 overflow-y-auto pr-2">
           {chartData.map(slice => (
-            <div key={slice.category} className="flex items-center justify-between p-1.5 bg-slate-700 rounded">
+            <div key={slice.category} style={legendItemBgStyle} className="flex items-center justify-between p-1.5 rounded">
               <div className="flex items-center">
                 <span style={{ backgroundColor: slice.color }} className="w-3 h-3 rounded-full mr-2 inline-block"></span>
-                <span className={`text-${COLORS.textSecondary}`}>{slice.category}</span>
+                <span style={textSecondaryStyle}>{slice.category}</span>
               </div>
-              <span className={`font-medium text-${COLORS.textPrimary}`}>
+              <span className="font-medium" style={textPrimaryStyle}>
                 {formatCurrency(slice.amount, currencySymbol)}
               </span>
             </div>

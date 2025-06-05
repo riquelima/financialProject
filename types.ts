@@ -40,7 +40,7 @@ export interface AppSettings {
   user_id?: string; // UUID from Supabase users table, primary key for settings
   currencySymbol: string;
   userNameDisplay?: string; // Renamed from userName to avoid confusion with login username
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light'; // Updated to allow 'dark' or 'light'
 }
 
 // Represents a user record from your custom 'users' table in Supabase

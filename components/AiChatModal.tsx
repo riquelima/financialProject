@@ -1,7 +1,7 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { XIcon, SendIcon, RobotIcon, COLORS } from '../constants';
-// Removed formatCurrency, formatDate, EXPENSE_CATEGORIES, INCOME_CATEGORIES as they were for local simulation
 import { Transaction, TransactionType } from '../types'; 
 
 interface FinancialContext {
@@ -37,7 +37,7 @@ interface Message {
   timestamp: Date;
 }
 
-const PROXY_API_CHAT_URL = '/api/chat'; // API route for the Vercel function
+const PROXY_API_CHAT_URL = '/api/chat'; 
 
 const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialContext }) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -95,7 +95,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
         },
         body: JSON.stringify({
           userInput: trimmedInput,
-          context: financialContext, // Send the whole financial context
+          context: financialContext, 
         }),
       });
 
@@ -107,7 +107,6 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
             const errJson = await response.json();
             errorData.message = errJson.message || errJson.error || errorData.message;
         } catch (e) {
-            // If response is not JSON, use the status text or default message
             errorData.message = `Erro HTTP: ${response.status} - ${response.statusText || 'Falha ao buscar resposta da IA.'}`;
         }
         throw new Error(errorData.message);
@@ -153,16 +152,15 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
 
   return (
     <div 
-      className="fixed inset-0 z-[70] bg-[var(--absolute-black)] flex flex-col transition-opacity duration-300 ease-in-out"
-      style={{ opacity: isOpen ? 1 : 0 }}
+      className="fixed inset-0 z-[70] flex flex-col transition-opacity duration-300 ease-in-out"
+      style={{ backgroundColor: 'var(--primary-bg)', opacity: isOpen ? 1 : 0 }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="ai-chat-modal-title"
     >
-      {/* Header */}
       <header 
         className="flex items-center justify-between p-4"
-        style={{ backgroundColor: 'var(--deep-gray-2)', borderBottom: '1px solid rgba(255,255,255,0.1)'}}
+        style={{ backgroundColor: 'var(--secondary-bg)', borderBottom: '1px solid var(--card-border-light)'}}
       >
         <div className="flex items-center">
           <RobotIcon className="w-7 h-7 mr-2 gradient-text"/>
@@ -172,14 +170,13 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
         </div>
         <button 
           onClick={onClose} 
-          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-full hover:bg-[var(--deep-gray-1)]"
+          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-full hover:bg-[var(--tertiary-bg)]"
           aria-label="Fechar chat"
         >
           <XIcon className="w-5 h-5" />
         </button>
       </header>
 
-      {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -187,11 +184,12 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
               className={`p-3 rounded-xl max-w-[80%] md:max-w-[70%] break-words shadow-md ${
                 msg.sender === 'user' 
                   ? 'bg-[var(--amethyst-purple)] text-white rounded-br-none' 
-                  : 'bg-[var(--deep-gray-2)] text-[var(--text-primary)] rounded-bl-none border border-[rgba(255,255,255,0.08)]'
+                  : 'rounded-bl-none border'
               }`}
+              style={ msg.sender === 'ai' ? { backgroundColor: 'var(--tertiary-bg)', color: 'var(--text-primary)', borderColor: 'var(--card-border-light)'} : {}}
             >
               <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-              <p className={`text-xs mt-1.5 ${msg.sender === 'user' ? 'text-purple-200 text-right' : 'text-slate-500 text-left'}`}>
+              <p className={`text-xs mt-1.5 ${msg.sender === 'user' ? 'text-purple-200 text-right' : 'text-[var(--text-secondary)] text-left'}`}>
                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
@@ -199,11 +197,11 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
         ))}
         {isLoadingAiResponse && (
           <div className="flex justify-start">
-             <div className="p-3 rounded-lg rounded-bl-none max-w-[70%] bg-[var(--deep-gray-2)] text-[var(--text-primary)] border border-[rgba(255,255,255,0.08)]">
+             <div className="p-3 rounded-lg rounded-bl-none max-w-[70%]" style={{backgroundColor: 'var(--tertiary-bg)', color: 'var(--text-primary)', border: '1px solid var(--card-border-light)'}}>
                 <div className="flex items-center space-x-1.5">
-                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-pulse " style={{animationDelay: '0.075s'}}></div>
-                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-pulse " style={{animationDelay: '0.15s'}}></div>
-                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-pulse " style={{animationDelay: '0.3s'}}></div>
+                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-pulse " style={{animationDelay: '0.075s'}}></div>
+                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-pulse " style={{animationDelay: '0.15s'}}></div>
+                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-pulse " style={{animationDelay: '0.3s'}}></div>
                 </div>
              </div>
           </div>
@@ -211,10 +209,9 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
       <div 
         className="p-3 sm:p-4 flex items-end"
-        style={{ backgroundColor: 'var(--deep-gray-2)', borderTop: '1px solid rgba(255,255,255,0.1)'}}
+        style={{ backgroundColor: 'var(--secondary-bg)', borderTop: '1px solid var(--card-border-light)'}}
       >
         <textarea
           ref={inputRef}
@@ -223,13 +220,13 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
           onKeyDown={handleKeyDown}
           placeholder="Digite sua mensagem..."
           rows={1}
-          className="flex-1 bg-[var(--deep-gray-1)] border border-[rgba(255,255,255,0.15)] rounded-lg p-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--electric-blue)] focus:border-[var(--electric-blue)] resize-none input-neon-focus placeholder-[var(--placeholder-text-color)] text-sm max-h-24 overflow-y-auto"
+          className="flex-1 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg p-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--input-focus-border)] focus:border-[var(--input-focus-border)] resize-none input-neon-focus placeholder-[var(--placeholder-text)] text-sm max-h-24 overflow-y-auto"
           style={{ scrollbarWidth: 'thin' }}
         />
         <button
           onClick={handleSendMessage}
           disabled={isLoadingAiResponse || inputValue.trim() === ''}
-          className="ml-2 sm:ml-3 p-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--deep-gray-2)] focus:ring-[var(--electric-blue)] transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+          className="ml-2 sm:ml-3 p-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--electric-blue)] transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
           style={{ background: COLORS.gradientAiChatSend }}
           aria-label="Enviar mensagem"
         >

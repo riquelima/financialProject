@@ -39,16 +39,22 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
     '2xl': 'max-w-2xl',
   };
 
+  // Updated to use CSS variables for background color if backdrop is transparent
+  // Assuming --primary-bg-rgb is set for rgba() usage
+  const backdropBgColor = backdropBlur ? `rgba(var(--primary-bg-rgb, 0,0,0), 0.8)` : `rgba(var(--primary-bg-rgb, 0,0,0), 0.95)`;
+
+
   return (
     <div 
-      className={`fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[60] transition-opacity duration-300 ease-in-out ${backdropBlur ? 'backdrop-blur-md' : ''}`}
+      className={`fixed inset-0 flex items-center justify-center p-4 z-[60] transition-opacity duration-300 ease-in-out ${backdropBlur ? 'backdrop-blur-md' : ''}`}
+      style={{ backgroundColor: backdropBgColor }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
     >
       <div 
-        style={{ backgroundColor: 'var(--deep-gray-1)', border: '1px solid rgba(255,255,255,0.1)'}}
+        style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--modal-border)'}}
         className={`rounded-[14px] shadow-2xl p-6 m-4 w-full ${sizeClasses[size]} transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-modalShow`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -56,7 +62,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
           {title && <h2 id="modal-title" className="text-2xl font-semibold" style={{color: 'var(--text-primary)'}}>{title}</h2>}
           <button 
             onClick={onClose} 
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-full hover:bg-[var(--deep-gray-2)]"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-full hover:bg-[var(--button-hover-bg)]"
             aria-label="Fechar modal"
           >
             <XIcon className="w-5 h-5" />

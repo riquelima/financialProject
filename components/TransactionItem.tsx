@@ -15,13 +15,16 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onEdit, 
   const isIncome = transaction.type === TransactionType.INCOME;
 
   return (
-    <div className={`p-4 bg-${COLORS.cardBackgroundLighter} rounded-lg shadow-md mb-3 transition-all duration-300 hover:shadow-lg`}>
+    <div 
+        className={`p-4 rounded-lg shadow-md mb-3 transition-all duration-300 hover:shadow-lg`}
+        style={{ backgroundColor: 'var(--tertiary-bg)'}}
+    >
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="text-lg font-semibold text-gray-100">{transaction.description}</h3>
-          <p className="text-xs text-gray-400">{transaction.category} - {formatDate(transaction.date)}</p>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)'}}>{transaction.description}</h3>
+          <p className="text-xs" style={{ color: 'var(--text-secondary)'}}>{transaction.category} - {formatDate(transaction.date)}</p>
         </div>
-        <p className={`text-lg font-bold ${isIncome ? `text-${COLORS.income}` : `text-${COLORS.expense}`}`}>
+        <p className={`text-lg font-bold ${isIncome ? `text-${COLORS.incomeTailwind}` : `text-${COLORS.expenseTailwind}`}`}>
           {isIncome ? '+' : '-'} {formatCurrency(transaction.amount, settings?.currencySymbol || 'R$')}
         </p>
       </div>

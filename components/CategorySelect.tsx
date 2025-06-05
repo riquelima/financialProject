@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDownIcon, COLORS } from '../constants';
+import { ChevronDownIcon } from '../constants'; // Removed COLORS import as it's not directly used for bg/text here
 
 interface CategorySelectProps {
   categories: string[];
@@ -18,14 +18,15 @@ const CategorySelect: React.FC<CategorySelectProps> = ({ categories, selectedVal
         value={selectedValue}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className={`w-full appearance-none bg-${COLORS.cardBackgroundLighter} border border-slate-600 text-${COLORS.textPrimary} placeholder-${COLORS.textSecondary} text-sm rounded-lg focus:ring-${COLORS.primary} focus:border-${COLORS.primary} block p-3 pr-10 transition-colors duration-200 focus:outline-none focus:shadow-outline-blue`}
+        // Added themed-select class from index.html for consistent styling
+        className={`w-full appearance-none themed-select text-sm rounded-lg focus:ring-[var(--emerald-lime)] focus:border-[var(--emerald-lime)] block p-3 pr-10 transition-colors duration-200 focus:outline-none input-neon-focus`}
       >
         {placeholder && <option value="" disabled>{placeholder}</option>}
         {categories.map(category => (
           <option key={category} value={category}>{category}</option>
         ))}
       </select>
-      <div className={`absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-${COLORS.textSecondary}`}>
+      <div className={`absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-[var(--text-secondary)]`}>
         <ChevronDownIcon className="w-5 h-5" />
       </div>
     </div>

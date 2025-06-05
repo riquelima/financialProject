@@ -1,32 +1,26 @@
 import React from 'react';
 
-// New "Dark Neon" Theme Color Palette
+// New "Dark Neon" Theme Color Palette (Focus on Accent Colors)
 export const COLORS = {
-  absoluteBlack: '#0D0D0D',
-  deepGray1: '#121212', // Primary card/surface backgrounds
-  deepGray2: '#1E1E1E', // Secondary or slightly elevated surfaces
-
+  absoluteBlack: '#0D0D0D', // Retained for specific use cases if needed outside theme
+  
   emeraldLime: '#00FFB2',
   amethystPurple: '#A64AC9',
   electricBlue: '#00BFFF',
   softMagenta: '#FF55AA',
   coralRed: '#FF6B6B', // For expenses
+  
+  // Specific accent colors (Tailwind compatible for direct use if needed)
+  // These are mostly for highlights that don't change with theme, like income/expense text
+  incomeTailwind: 'emerald-400', // e.g., text-emerald-400
+  expenseTailwind: 'red-500',    // e.g., text-red-500
+  
+  // Accent colors for gradients or specific components, not general UI theming
+  petroleumBlue: '[#1C3A4E]', // Used in gradients, keep as is for Tailwind JIT
+  deepPurple: 'purple-500', // Used in gradients
+  discreetNeonGreen: '[#00C896]', // Used in gradients
 
-  textPrimary: '#E0E0E0',       // Main light gray text
-  textSecondary: '#A0A0A0',     // Subdued gray text
-  placeholderText: 'rgba(224, 224, 224, 0.4)', // For input placeholders
-
-  // Added to fix TypeScript errors and align with Tailwind usage
-  cardBackground: 'slate-800',          // Tailwind class suffix
-  cardBackgroundLighter: 'slate-700',   // Tailwind class suffix
-  income: 'emerald-400',                // Tailwind class suffix (maps to COLORS.primary)
-  expense: 'red-500',                   // Tailwind class suffix (maps to COLORS.accentRed)
-  petroleumBlue: '[#1C3A4E]',            // Tailwind arbitrary value for gradients/backgrounds
-  deepPurple: 'purple-500',             // Tailwind class suffix (maps to COLORS.accentPurple)
-  textAccent: 'blue-400',               // Tailwind class suffix (maps to COLORS.accentBlue)
-  discreetNeonGreen: '[#00C896]',        // Tailwind arbitrary value
-
-  // Predefined gradients (Tailwind JIT can't always make these complex ones easily)
+  // Predefined gradients (using CSS variables for base colors where possible, or fixed accent colors)
   gradientPrimary: 'linear-gradient(135deg, var(--emerald-lime), var(--amethyst-purple))',
   gradientSecondary: 'linear-gradient(135deg, var(--electric-blue), var(--soft-magenta))',
   gradientExpense: 'linear-gradient(135deg, var(--coral-red), var(--amethyst-purple))',
@@ -36,21 +30,8 @@ export const COLORS = {
   gradientAiChatFab: 'linear-gradient(135deg, var(--electric-blue), var(--amethyst-purple))',
   gradientAiChatSend: 'linear-gradient(135deg, var(--electric-blue), var(--soft-magenta))',
 
-
-  // Tailwind compatible gradient classes (approximations)
-  twGradientPrimaryFrom: 'from-emerald-400', // approx emeraldLime
-  twGradientPrimaryVia: 'via-purple-500', // approx amethystPurple
-  twGradientPrimaryTo: 'to-purple-600',
-
+  // Tailwind compatible gradient classes for specific elements (keep if these are unique visual features)
   twGradientButton: 'bg-gradient-to-r from-[#00FFB2] via-[#A64AC9] to-[#00BFFF]', // emerald, amethyst, electric
-  twGradientCardBg: 'bg-gradient-to-br from-[rgba(18,18,18,0.7)] to-[rgba(30,30,30,0.5)]', // deepGray1 to deepGray2 with opacity
-
-  // For direct use in Tailwind classes where possible
-  primary: 'emerald-400', // #00FFB2 is brighter, Tailwind uses 400/500 for similar vibrancy
-  accentPurple: 'purple-500', // #A64AC9
-  accentBlue: 'blue-400', // #00BFFF
-  accentMagenta: 'pink-500', // #FF55AA
-  accentRed: 'red-500', // #FF6B6B
 };
 
 // Icons (Lucide-React inspired SVGs) - No changes to SVG definitions themselves

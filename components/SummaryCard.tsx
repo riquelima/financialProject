@@ -3,14 +3,14 @@ import { COLORS } from '../constants';
 
 interface SummaryCardProps {
   title: string;
-  value?: string | number | null; // Made value optional
+  value?: string | number | null; 
   icon?: React.ReactNode;
   valueColor?: string; 
   borderColor?: string; 
   subValue?: string;
   gradientBg?: string; 
   onClick?: () => void;
-  isActionCard?: boolean; // New prop
+  isActionCard?: boolean; 
 }
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ 
@@ -22,56 +22,55 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
   subValue, 
   gradientBg, 
   onClick,
-  isActionCard = false // Default to false
+  isActionCard = false 
 }) => {
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: 'rgba(30, 30, 30, 0.6)', 
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)', 
-    borderRadius: '14px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    position: 'relative', 
-    overflow: 'hidden',
-    display: 'flex', // Added for isActionCard centering
-    flexDirection: 'column', // Added for isActionCard centering
-    justifyContent: isActionCard ? 'center' : 'flex-start', // Center content for action card
-    alignItems: isActionCard ? 'center' : 'stretch', // Center content for action card
-  };
-
-  let titleTextColor = 'var(--text-secondary)';
-  let subValueTextColor = 'var(--text-secondary)';
-
-  if (gradientBg) {
-    cardStyle.background = gradientBg;
-    titleTextColor = 'var(--deep-gray-1)'; 
-    subValueTextColor = 'var(--deep-gray-2)';
-  }
+  // glassmorphism-card class handles background and base border via CSS variables
+  const cardBaseClasses = "p-5 shadow-lg transition-all duration-300 ease-in-out glassmorphism-card";
   
+  const interactiveClasses = onClick ? `cursor-pointer ${!isActionCard ? 'hover:transform hover:-translate-y-1' : ''} hover:shadow-2xl` : '';
+
+  // Determine text colors based on whether a gradient background is used (which implies light text)
+  // or fall back to theme variables.
+  let titleTextColor = gradientBg ? 'rgba(var(--primary-bg-rgb, 0,0,0),0.8)' : 'var(--text-secondary)';
+  let subValueTextColor = gradientBg ? 'rgba(var(--primary-bg-rgb, 0,0,0),0.7)' : 'var(--text-secondary)';
+  let valuePrimaryColor = gradientBg ? 'var(--primary-bg)' : 'var(--text-primary)';
+
   const iconContainerStyle: React.CSSProperties = {
-    color: valueColor || 'var(--emerald-lime)',
+    color: valueColor || 'var(--emerald-lime)', // Default icon color if not specified
     filter: `drop-shadow(0 0 5px ${valueColor || 'var(--emerald-lime)'}77)`,
     transition: 'transform 0.3s ease-in-out',
   };
 
-  // For action card, title uses valueColor if provided, else default titleTextColor
-  const actionCardTitleColor = valueColor || titleTextColor;
+  const actionCardTitleColor = valueColor || (gradientBg ? 'var(--primary-bg)' : 'var(--text-accent)');
+
+  const cardOuterStyle: React.CSSProperties = {};
+  if (gradientBg) {
+    cardOuterStyle.background = gradientBg;
+  }
+  if(isActionCard){
+     cardOuterStyle.display = 'flex';
+     cardOuterStyle.flexDirection = 'column';
+     cardOuterStyle.justifyContent = 'center';
+     cardOuterStyle.alignItems = 'center';
+  }
+
 
   return (
     <div 
-      style={cardStyle} 
-      className={`p-5 shadow-lg transition-all duration-300 ease-in-out hover:shadow-2xl ${!isActionCard ? 'hover:transform hover:-translate-y-1' : ''} ${onClick ? 'cursor-pointer' : ''}`}
+      style={cardOuterStyle}
+      className={`${cardBaseClasses} ${interactiveClasses}`}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
     >
-      {borderColor && !isActionCard && ( // Border only for non-action cards, or style differently
+      {borderColor && !isActionCard && (
         <div 
           className="absolute left-0 top-0 bottom-0 w-1.5" 
           style={{ backgroundColor: borderColor, borderTopLeftRadius: '14px', borderBottomLeftRadius: '14px' }}
         ></div>
       )}
-       {borderColor && isActionCard && ( // Full border for action cards perhaps, or different style
+       {borderColor && isActionCard && ( 
         <div 
           className="absolute inset-0 border-2 pointer-events-none rounded-[14px]" 
           style={{ borderColor: borderColor, opacity: 0.7 }}
@@ -79,14 +78,14 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
       )}
       
       {isActionCard ? (
-        <div className={`flex flex-col items-center justify-center text-center ${borderColor ? '' : ''}`}>
+        <div className={`flex flex-col items-center justify-center text-center`}>
           {icon && <div className="mb-2" style={iconContainerStyle}>{icon}</div>}
           <h3 className="text-xl font-semibold" style={{color: actionCardTitleColor }}>
             {title}
           </h3>
         </div>
       ) : (
-        <div className={borderColor ? 'ml-3' : ''}> {/* Apply margin only if border is present */}
+        <div className={borderColor ? 'ml-3' : ''}>
           <div className={`flex items-center justify-between mb-1`}>
             <h3 className="text-sm font-medium uppercase tracking-wider" style={{color: titleTextColor}}>{title}</h3>
             {icon && <div style={iconContainerStyle} className="group-hover:scale-110">{icon}</div>}
@@ -94,7 +93,10 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
           {(value || value === 0) && ( 
              <p 
               className="text-3xl font-bold animate-countUp" 
-              style={{ color: valueColor || (gradientBg ? 'var(--deep-gray-1)' : 'var(--text-primary)'), WebkitTextStroke: `0.5px ${valueColor ? 'transparent' : 'rgba(255,255,255,0.1)'}`}}
+              style={{ 
+                color: valueColor || valuePrimaryColor, 
+                // WebkitTextStroke: `0.5px ${valueColor ? 'transparent' : 'rgba(var(--text-primary-rgb, 224,224,224),0.1)'}`
+              }}
             >
               {value}
             </p>

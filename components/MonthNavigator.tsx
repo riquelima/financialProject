@@ -20,7 +20,7 @@ const MonthNavigator: React.FC<MonthNavigatorProps> = ({ className = ''}) => {
 
   return (
     <div 
-      style={{ backgroundColor: 'var(--deep-gray-2)', border: '1px solid rgba(255,255,255,0.1)' }}
+      style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--card-border)' }}
       className={`flex items-center justify-between p-3 rounded-[14px] shadow-lg ${className}`}
     >
       <button 
@@ -35,7 +35,7 @@ const MonthNavigator: React.FC<MonthNavigatorProps> = ({ className = ''}) => {
       </h2>
       <button 
         onClick={handleNextMonth} 
-        className="p-2 rounded-full hover:bg-[var(--emerald-lime)] text-[var(--text-secondary)] hover:text-[var(--deep-gray-1)] transition-all duration-300 ease-in-out transform hover:scale-110"
+        className="p-2 rounded-full hover:bg-[var(--emerald-lime)] text-[var(--text-secondary)] hover:text-[var(--primary-bg)] transition-all duration-300 ease-in-out transform hover:scale-110"
         aria-label="Próximo mês"
       >
         <ChevronRightIcon className="w-6 h-6" />

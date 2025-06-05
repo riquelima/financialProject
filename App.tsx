@@ -1,52 +1,51 @@
 
+
 import React, { useMemo } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { useAppContext } from './hooks/useAppContext'; // Caminho já estava correto, reafirmando.
+import { useAppContext } from './hooks/useAppContext'; 
 import { HomeIcon, CalendarIcon, ListIcon, BarChart2Icon, CogIcon, COLORS, AlertTriangleIcon } from './constants';
 import DashboardScreen from './screens/DashboardScreen';
 import FinancialPeriodScreen from './screens/FinancialPeriodScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import LoginScreen from './screens/LoginScreen';
-// import AiChatFab from './components/AiChatFab'; // Removido
-// import AiChatModal from './components/AiChatModal'; // Removido
 import { PeriodType } from './types';
 
 const baseNavLinks = [
   { to: "/", icon: HomeIcon, label: "Dashboard" },
-  { to: "/mid-month", icon: CalendarIcon, label: "Meio Mês" }, // Admin sees "Meio Mês"
+  { to: "/mid-month", icon: CalendarIcon, label: "Meio Mês" }, 
   { to: "/end-of-month", icon: ListIcon, label: "Fim Mês" },
   { to: "/history", icon: BarChart2Icon, label: "Histórico" },
   { to: "/settings", icon: CogIcon, label: "Ajustes" },
 ];
 
 interface BottomNavigationProps {
-  // currentUser is now the username string, not the UUID
   currentUsername: string | null; 
 }
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentUsername }) => {
   const navLinkClasses = ({ isActive }: { isActive: boolean }): string =>
     `flex flex-col items-center justify-center p-2 transition-colors duration-300 ease-in-out
-     ${isActive ? 'neon-glow-active' : 'text-slate-400 hover:text-slate-200'}`;
+     ${isActive ? 'neon-glow-active' : 'hover:text-[var(--link-inactive-hover-text)]'}`
+     + ` ${!isActive ? 'text-[var(--link-inactive-text)]' : ''}`;
+
 
   const visibleNavLinks = useMemo(() => {
     if (currentUsername === 'admin') {
       return baseNavLinks;
     }
-    // Para usuários não-admin: Dashboard, Mês, Histórico, Ajustes
     return baseNavLinks
-      .filter(link => link.label !== "Fim Mês") // Remove "Fim Mês"
+      .filter(link => link.label !== "Fim Mês") 
       .map(link => {
         if (link.label === "Meio Mês") {
-          return { ...link, label: "Mês" }; // Renomeia "Meio Mês" para "Mês"
+          return { ...link, label: "Mês" }; 
         }
         return link;
       });
   }, [currentUsername]);
 
   return (
-    <nav style={{ backgroundColor: 'var(--deep-gray-2)', borderTop: '1px solid rgba(255,255,255,0.1)' }} 
+    <nav style={{ backgroundColor: 'var(--secondary-bg)', borderTop: '1px solid var(--card-border-light)' }} 
          className="fixed bottom-0 left-0 right-0 shadow-2xl z-50">
       <div className="max-w-md mx-auto flex justify-around items-center h-16">
         {visibleNavLinks.map(link => (
@@ -65,8 +64,8 @@ const GlobalFeedback: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div style={{ backgroundColor: 'rgba(13, 13, 13, 0.9)', backdropFilter: 'blur(5px)' }} 
-           className="fixed inset-0 flex flex-col items-center justify-center z-[100] text-white text-lg space-y-4">
+      <div style={{ backgroundColor: 'rgba(var(--primary-bg-rgb, 13, 13, 13), 0.9)', backdropFilter: 'blur(5px)' }} 
+           className="fixed inset-0 flex flex-col items-center justify-center z-[100] text-[var(--text-primary)] text-lg space-y-4">
         <svg className="animate-spin h-10 w-10" style={{ color: 'var(--emerald-lime)' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -78,7 +77,7 @@ const GlobalFeedback: React.FC = () => {
   
   if (isSaving) {
      return (
-      <div style={{ background: 'var(--electric-blue)', color: 'var(--deep-gray-1)'}} 
+      <div style={{ background: 'var(--electric-blue)', color: 'var(--primary-bg)'}} // Use primary-bg for text on accent bg
            className="fixed top-5 right-5 text-sm py-2.5 px-5 rounded-[14px] shadow-xl z-[100] flex items-center space-x-2 animate-pulse">
         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -91,34 +90,33 @@ const GlobalFeedback: React.FC = () => {
 
   if (error) {
     return (
-      <div style={{ background: 'var(--coral-red)', color: 'var(--absolute-black)' }} 
+      <div style={{ background: 'var(--coral-red)', color: 'var(--primary-bg)' }} // Use primary-bg for text on accent bg
            className="fixed top-5 right-5 left-5 md:left-auto md:max-w-md text-sm py-3 px-5 rounded-[14px] shadow-xl z-[100] flex items-center space-x-3">
         <AlertTriangleIcon className="h-5 w-5" />
         <span className="font-medium">{error}</span>
       </div>
     )
   }
-
+  // Add RGB versions of primary-bg for rgba backdrop in isLoading, to be used in style
+  // This can be done by setting CSS variables like --primary-bg-rgb: 13, 13, 13; in :root and 
+  // --primary-bg-rgb: 240, 242, 245; in body.theme-light
   return null;
 };
 
 
 const App: React.FC = () => {
   const { isAuthenticated, currentUsername } = useAppContext();
-  // const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false); // Removido
   
-  // const currentMonthDataForAI = getCurrentMonthData(); // Removido
-
   return (
     <HashRouter>
       <GlobalFeedback />
       {isAuthenticated ? (
         <div className="flex flex-col h-screen">
-          <main className="flex-1 overflow-y-auto pb-20" style={{ backgroundColor: 'var(--absolute-black)' }}>
+          <main className="flex-1 overflow-y-auto pb-20" style={{ backgroundColor: 'var(--primary-bg)' }}>
             <Routes>
               <Route path="/" element={<DashboardScreen />} />
               <Route path="/mid-month" element={<FinancialPeriodScreen periodType={PeriodType.MID_MONTH} />} />
-              {currentUsername === 'admin' && ( // Logic based on username
+              {currentUsername === 'admin' && ( 
                 <Route path="/end-of-month" element={<FinancialPeriodScreen periodType={PeriodType.END_OF_MONTH} />} />
               )}
               <Route path="/history" element={<HistoryScreen />} />
@@ -128,24 +126,7 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
-          {/* <AiChatFab onClick={() => setIsAiChatModalOpen(true)} /> */} {/* Removido */}
           <BottomNavigation currentUsername={currentUsername} />
-          {/* <AiChatModal 
-            isOpen={isAiChatModalOpen} 
-            onClose={() => setIsAiChatModalOpen(false)} 
-            financialContext={{ 
-              currentMonthData: currentMonthDataForAI ? {
-                openingBalance: currentMonthDataForAI.openingBalance,
-                creditCardLimit: currentMonthDataForAI.creditCardLimit,
-              } : undefined, 
-              allTransactions: getAllTransactionsForMonth(activeMonthYear),
-              monthlySummary: getMonthlySummary(activeMonthYear),
-              userSettings: settings ? {
-                 currencySymbol: settings.currencySymbol,
-                 userName: settings.userNameDisplay || currentUsername || undefined,
-              } : { currencySymbol: "R$", userName: currentUsername || undefined }
-            }}
-          /> */} {/* Removido */}
         </div>
       ) : (
         <Routes>

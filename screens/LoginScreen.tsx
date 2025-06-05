@@ -15,7 +15,6 @@ const LoginScreen: React.FC = () => {
       if (typeof contextError === 'string') {
         setLocalError(contextError);
       } else {
-        // Fallback se contextError não for uma string (o que não deveria acontecer)
         setLocalError('Ocorreu um erro inesperado. Verifique o console.');
         console.warn("LoginScreen: contextError não é uma string:", contextError);
       }
@@ -34,11 +33,11 @@ const LoginScreen: React.FC = () => {
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center p-4"
-      style={{ background: 'linear-gradient(160deg, var(--electric-blue), var(--absolute-black) 50%, var(--amethyst-purple))' }}
+      style={{ background: 'linear-gradient(160deg, var(--electric-blue), var(--primary-bg) 50%, var(--amethyst-purple))' }}
     >
       <div 
         className="w-full max-w-md p-8 rounded-[14px] shadow-2xl"
-        style={{ backgroundColor: 'var(--deep-gray-1)', border: '1px solid rgba(255,255,255,0.05)' }}
+        style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--card-border)' }}
       >
         <div className="text-center mb-10">
           <DollarSignIcon className="w-20 h-20 mx-auto mb-4 gradient-text" />
@@ -62,9 +61,8 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
               disabled={isLoading} 
-              className="w-full bg-[var(--deep-gray-2)] border border-transparent text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-[10px] focus:border-[var(--emerald-lime)] focus:ring-2 focus:ring-[var(--emerald-lime)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50"
+              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-[10px] focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50"
               placeholder="Nome de usuário"
-              style={{borderColor: 'rgba(255,255,255,0.1)'}}
             />
           </div>
 
@@ -83,16 +81,15 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading} 
-              className="w-full bg-[var(--deep-gray-2)] border border-transparent text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-[10px] focus:border-[var(--emerald-lime)] focus:ring-2 focus:ring-[var(--emerald-lime)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50"
+              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-[10px] focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50"
               placeholder="Sua senha"
-              style={{borderColor: 'rgba(255,255,255,0.1)'}}
             />
           </div>
 
           {localError && !isLoading && ( 
             <p 
               className="text-sm text-center p-2.5 rounded-[10px]"
-              style={{ backgroundColor: 'rgba(255,107,107,0.1)', color: 'var(--coral-red)'}}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--coral-red) 15%, transparent)', color: 'var(--coral-red)'}}
             >
               {localError}
             </p>
@@ -116,7 +113,7 @@ const LoginScreen: React.FC = () => {
         </form>
       </div>
        <footer className="absolute bottom-5 text-center w-full">
-        <p className="text-xs" style={{color: 'rgba(255,255,255,0.3)'}}>
+        <p className="text-xs" style={{color: 'color-mix(in srgb, var(--text-secondary) 50%, transparent)'}}>
           &copy; {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.
         </p>
       </footer>

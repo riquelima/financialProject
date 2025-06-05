@@ -56,7 +56,7 @@ const createEmptyMonthDataStructure = (monthYear: string, userId?: string, id?: 
 const defaultAppSettings: AppSettings = {
   currencySymbol: 'R$',
   userNameDisplay: '',
-  theme: 'dark',
+  theme: 'dark', // Default theme
 };
 
 const defaultInitialAppState: AppState = {
@@ -80,6 +80,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [error, setError] = useState('');
 
   const clearError = () => setError('');
+
+  // Effect to apply theme class to body
+  useEffect(() => {
+    if (appState.settings?.theme) {
+      document.body.classList.remove('theme-dark', 'theme-light');
+      document.body.classList.add(`theme-${appState.settings.theme}`);
+    } else {
+      // Default to dark theme if no settings yet (or explicitly remove light if it was there)
+      document.body.classList.remove('theme-light');
+      document.body.classList.add('theme-dark');
+    }
+  }, [appState.settings?.theme]);
+
 
   // Helper to get or create a MonthData record in Supabase
   const getOrCreateSupabaseMonthRecord = useCallback(async (userId: string, monthYear: string): Promise<string> => {
@@ -113,7 +126,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw new Error(`Falha ao criar registro do mês ${monthYear} no Supabase: ${insertError?.message || 'No data returned'}`);
     }
     return newMonth.id;
-  }, [isSupabaseConfigured]); // Added isSupabaseConfigured dependency
+  }, [isSupabaseConfigured]); 
 
 
   const loadAllUserDataForUser = useCallback(async (userId: string, username: string) => {
@@ -124,7 +137,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
     clearError();
-    setIsLoading(true); // Set loading true at the beginning of data fetching
+    setIsLoading(true); 
     
     let settingsData: AppSettings | null = null;
     let activeMonthYearToSet = getCurrentMonthYear();
@@ -144,26 +157,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (fetchedSettings) {
         settingsData = fetchedSettings as AppSettings;
-        console.log(`Settings found for user ${userId}.`);
+        console.log(`Settings found for user ${userId}. Theme: ${settingsData.theme}`);
       } else {
         console.log(`Settings not found for user ${userId}, attempting to create default settings.`);
         try {
+          const defaultSettingsForNewUser: Omit<AppSettings, 'user_id'> = {
+            currencySymbol: 'R$',
+            userNameDisplay: username,
+            theme: 'dark', // Default theme for new users
+          };
           const { data: newSettings, error: insertSettingsError } = await supabase
             .from('settings')
-            .insert({ user_id: userId, currency_symbol: 'R$', user_name_display: username, theme: 'dark' })
+            .insert({ ...defaultSettingsForNewUser, user_id: userId })
             .select()
             .single();
           if (insertSettingsError) throw insertSettingsError;
           settingsData = newSettings as AppSettings;
-          console.log(`Default settings created for user ${userId}.`);
+          console.log(`Default settings created for user ${userId}. Theme: ${settingsData.theme}`);
         } catch (insertError: any) {
-          if (insertError.code === '23505') { // Unique constraint violation
+          if (insertError.code === '23505') { 
             console.warn(`Insert default settings failed with 23505 for user ${userId}. Assuming record exists. Re-fetching.`);
             const { data: refetchedSettings, error: refetchError } = await supabase
               .from('settings')
               .select('*')
               .eq('user_id', userId)
-              .single(); // Expect it to exist
+              .single(); 
             if (refetchError) {
               console.error('Error re-fetching settings after 23505:', refetchError);
               throw new Error(`Falha ao re-buscar configurações após erro de duplicidade (23505). Detalhe: ${refetchError.message}`);
@@ -176,12 +194,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             console.log('Settings successfully re-fetched after 23505 error.');
           } else {
             console.error('Supabase insert default settings error (non-23505):', insertError);
-            throw insertError; // Propagate other insert errors
+            throw insertError; 
           }
         }
       }
 
-      // 2. Fetch/Create Active Month Year
+      // Ensure settingsData has a theme, default if somehow missing
+      if (settingsData && !settingsData.theme) {
+        settingsData.theme = 'dark';
+      }
+
+
+      // 2. Fetch/Create Active Month Year (Logic remains the same)
       let { data: activeMonthRecord, error: activeMonthQueryError } = await supabase
         .from('active_months')
         .select('active_month_year')
@@ -282,7 +306,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAuthenticated: true,
         currentUser: userId,
         currentUsername: username,
-        settings: settingsData, // settingsData is now guaranteed to be AppSettings
+        settings: settingsData || defaultAppSettings, // Fallback to defaultAppSettings if somehow still null
         activeMonthYear: activeMonthYearToSet,
         data: reconstructedData,
       });
@@ -317,9 +341,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         data: { [getCurrentMonthYear()]: createEmptyMonthDataStructure(getCurrentMonthYear(),userId) }
       }));
     } finally {
-      setIsLoading(false); // Set loading false at the end of data fetching
+      setIsLoading(false); 
     }
-  }, [getOrCreateSupabaseMonthRecord, isSupabaseConfigured]); // Added isSupabaseConfigured dependency
+  }, [getOrCreateSupabaseMonthRecord, isSupabaseConfigured]);
 
   // Effect for initial config check and session check
   useEffect(() => {
@@ -344,7 +368,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           currentUser: storedUserId,
           currentUsername: storedUsername,
         }));
-        // setIsLoading(false) will be handled by the next useEffect.
       } else {
         if (storedUserId) console.log("Sessão expirada ou inválida, limpando localStorage.");
         localStorage.removeItem(LOCAL_STORAGE_USER_ID);
@@ -363,20 +386,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Effect to load data when user is authenticated, or manage isLoading state
    useEffect(() => {
     if (!isSupabaseConfigured) {
-      setIsLoading(false); // If Supabase not configured, not loading.
+      setIsLoading(false); 
       return;
     }
 
     if (appState.isAuthenticated && appState.currentUser && appState.currentUsername) {
-      // If authenticated and data/settings are missing, then load them.
       if (!appState.data || Object.keys(appState.data).length === 0 || !appState.settings) {
         loadAllUserDataForUser(appState.currentUser, appState.currentUsername);
       } else {
-        // Authenticated and data/settings are present. Ensure not loading.
         setIsLoading(false);
       }
     } else if (!appState.isAuthenticated) {
-      // Not authenticated. Ensure not loading.
       setIsLoading(false);
     }
   }, [
@@ -441,14 +461,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem(LOCAL_STORAGE_SESSION_EXPIRY, expiryTime.toString());
 
         setAppState(prevState => ({ 
-          ...defaultInitialAppState, // Reset to default, then set auth
+          ...defaultInitialAppState, 
           isAuthenticated: true,
           currentUser: userData.id,
           currentUsername: userData.username,
         }));
-        // setIsLoading(true) is ALREADY true here from the start of login function.
-        // The useEffect watching appState.isAuthenticated will trigger loadAllUserDataForUser
-        // which will handle isLoading internally and set it to false in its finally block.
         return true;
       } else {
         console.warn(
@@ -478,7 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsLoading(false);
       return false;
     }
-  }, [isSupabaseConfigured]); // Added isSupabaseConfigured dependency
+  }, [isSupabaseConfigured]); 
 
   const logout = useCallback(() => {
     console.log("Iniciando processo de logout.");
@@ -546,7 +563,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsSaving(false);
     }
-  }, [appState.currentUser, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]); // Added isSupabaseConfigured
+  }, [appState.currentUser, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]); 
 
   const deleteTransaction = useCallback(async (transactionId: string) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
@@ -587,7 +604,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsSaving(false);
     }
-  }, [appState.currentUser, isSupabaseConfigured]); // Added isSupabaseConfigured
+  }, [appState.currentUser, isSupabaseConfigured]);
 
   const updateTransaction = useCallback(async (updatedTransactionData: Transaction) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
@@ -636,14 +653,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsSaving(false);
     }
-  }, [appState.currentUser, isSupabaseConfigured]); // Added isSupabaseConfigured
+  }, [appState.currentUser, isSupabaseConfigured]); 
 
   const updateSettings = useCallback(async (newSettings: Partial<Omit<AppSettings, 'user_id'>>) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
     if (!appState.currentUser || !appState.settings) { setError("Usuário não autenticado ou configurações não carregadas."); setIsSaving(false); return; }
     setIsSaving(true); clearError();
     try {
-      const settingsToUpdate = { ...appState.settings, ...newSettings, user_id: appState.currentUser };
+      const settingsToUpdate = { 
+        ...appState.settings, 
+        ...newSettings,      
+        user_id: appState.currentUser 
+      };
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { user_id, ...payload } = settingsToUpdate; 
 
@@ -661,12 +682,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         settings: updatedSettingsData as AppSettings,
       }));
     } catch (err: any) {
-      console.error("Error updating settings:", err);
-      setError(`Falha ao atualizar configurações: ${err.message}`);
+        const baseUiMessage = "Erro ao atualizar configurações";
+        let finalUiMessage = baseUiMessage;
+
+        const errorProperties = ['message', 'code', 'details', 'hint'];
+        const allErrorKeys = Object.getOwnPropertyNames(err).concat(errorProperties.filter(p => err[p] !== undefined));
+        console.error(`${baseUiMessage}. Erro completo:`, JSON.stringify(err, Array.from(new Set(allErrorKeys)), 2));
+        
+        let parts = [baseUiMessage];
+        if (err.message && typeof err.message === 'string' && err.message.trim() !== "") parts.push(`Detalhe: ${err.message.trim()}`);
+        
+        if (err.code && typeof err.code === 'string' && err.code.trim() !== "") parts.push(`Código: ${err.code.trim()}`);
+        else if (err.code) parts.push(`Código: ${String(err.code)}`); 
+
+        if (err.details && typeof err.details === 'string' && err.details.trim() !== "") parts.push(`Info: ${err.details.trim()}`);
+        if (err.hint && typeof err.hint === 'string' && err.hint.trim() !== "") parts.push(`Dica: ${err.hint.trim()}`);
+        
+        finalUiMessage = parts.join('. ') + ". Tente novamente ou contate o suporte se o problema persistir.";
+        setError(finalUiMessage);
     } finally {
       setIsSaving(false);
     }
-  }, [appState.currentUser, appState.settings, isSupabaseConfigured]); // Added isSupabaseConfigured
+  }, [appState.currentUser, appState.settings, isSupabaseConfigured]); 
 
   const updateMonthData = useCallback(async (monthYear: string, dataToUpdate: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit'>>) => {
      if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
@@ -692,12 +729,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       });
     } catch (err: any) {
-      console.error("Error updating month data:", err);
-      setError(`Falha ao atualizar dados do mês: ${err.message}`);
+        const baseUiMessage = "Erro ao atualizar dados do mês";
+        let finalUiMessage = baseUiMessage;
+
+        const errorProperties = ['message', 'code', 'details', 'hint'];
+        const allErrorKeys = Object.getOwnPropertyNames(err).concat(errorProperties.filter(p => err[p] !== undefined));
+        console.error(`${baseUiMessage}. Erro completo:`, JSON.stringify(err, Array.from(new Set(allErrorKeys)), 2));
+        
+        let parts = [baseUiMessage];
+        if (err.message && typeof err.message === 'string' && err.message.trim() !== "") parts.push(`Detalhe: ${err.message.trim()}`);
+        
+        if (err.code && typeof err.code === 'string' && err.code.trim() !== "") parts.push(`Código: ${err.code.trim()}`);
+        else if (err.code) parts.push(`Código: ${String(err.code)}`);
+
+        if (err.details && typeof err.details === 'string' && err.details.trim() !== "") parts.push(`Info: ${err.details.trim()}`);
+        if (err.hint && typeof err.hint === 'string' && err.hint.trim() !== "") parts.push(`Dica: ${err.hint.trim()}`);
+        
+        finalUiMessage = parts.join('. ') + ". Tente novamente ou contate o suporte se o problema persistir.";
+        setError(finalUiMessage);
     } finally {
       setIsSaving(false);
     }
-  }, [appState.currentUser, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]); // Added isSupabaseConfigured
+  }, [appState.currentUser, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]); 
   
   const setActiveMonthYear = useCallback(async (monthYear: string) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
@@ -713,7 +766,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setIsSaving(true); clearError();
     try {
-      // Check if active_month record exists, if not, insert, otherwise update
       let { data: existingActiveMonth, error: fetchActiveError } = await supabase
         .from('active_months')
         .select('user_id')
@@ -735,7 +787,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (insertError) throw insertError;
       }
       
-      // Ensure the month_data record exists in Supabase if we are setting it active
       if (!appState.data[monthYear]?.id && appState.currentUser) {
          await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear); 
       }
@@ -746,12 +797,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsSaving(false);
     }
-  }, [appState.currentUser, appState.data, getOrCreateSupabaseMonthRecord, isSupabaseConfigured]); // Added isSupabaseConfigured
+  }, [appState.currentUser, appState.data, getOrCreateSupabaseMonthRecord, isSupabaseConfigured]); 
 
   const getCurrentMonthData = useCallback((): MonthData | null => {
     if (!appState.activeMonthYear || !appState.data[appState.activeMonthYear]) {
        if (appState.currentUser && appState.activeMonthYear) {
-        // Return a temporary empty structure if data is truly missing but should exist
         return createEmptyMonthDataStructure(appState.activeMonthYear, appState.currentUser);
       }
       return null;

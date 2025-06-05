@@ -10,16 +10,79 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
+            /* Accent Colors (remain constant across themes) */
             --emerald-lime: #00FFB2;
             --amethyst-purple: #A64AC9;
             --electric-blue: #00BFFF;
             --soft-magenta: #FF55AA;
             --coral-red: #FF6B6B; /* For expenses */
-            --placeholder-text-color: rgba(255, 255, 255, 0.4);
-            --deep-gray-1: #121212;
-            --deep-gray-2: #1E1E1E;
-            --absolute-black: #0D0D0D;
+
+            /* Dark Theme (Default) */
+            --primary-bg: #0D0D0D; /* absolute-black */
+            --primary-bg-rgb: 13, 13, 13; /* For rgba() */
+            --secondary-bg: #121212; /* deep-gray-1 */
+            --tertiary-bg: #1E1E1E; /* deep-gray-2 */
+            
+            --text-primary: #E0E0E0;
+            --text-secondary: #A0A0A0;
+            --text-accent: var(--emerald-lime); /* Can be overridden by specific components */
+            --placeholder-text: rgba(224, 224, 224, 0.4);
+            
+            --card-bg: rgba(30, 30, 30, 0.6); /* deep-gray-2 with opacity for glassmorphism */
+            --card-border: rgba(255, 255, 255, 0.1);
+            --card-border-light: rgba(255, 255, 255, 0.05); /* Lighter border for internal divisions */
+
+            --input-bg: var(--tertiary-bg);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --input-focus-border: var(--emerald-lime);
+            --input-focus-shadow: rgba(0, 255, 178, 0.5);
+
+            --modal-border: rgba(255, 255, 255, 0.1);
+            --button-hover-bg: var(--tertiary-bg);
+
+            --scrollbar-track-bg: var(--tertiary-bg);
+            --scrollbar-thumb-bg: var(--amethyst-purple);
+            --scrollbar-thumb-hover-bg: var(--electric-blue);
+            --scrollbar-border: var(--tertiary-bg);
+
+            --link-active-text: var(--emerald-lime);
+            --link-inactive-text: #A0A0A0; /* text-slate-400 equivalent */
+            --link-inactive-hover-text: #E0E0E0; /* text-slate-200 equivalent */
         }
+
+        body.theme-light {
+            --primary-bg: #F0F2F5; /* Light gray */
+            --primary-bg-rgb: 240, 242, 245; /* For rgba() */
+            --secondary-bg: #FFFFFF; /* White */
+            --tertiary-bg: #E9ECEF; /* Lighter gray for inputs/alternates */
+            
+            --text-primary: #1F2937; /* Dark gray for text */
+            --text-secondary: #6B7280; /* Medium gray for less important text */
+            --text-accent: var(--amethyst-purple); /* Keep some pop, or choose a darker accent */
+            --placeholder-text: rgba(55, 65, 81, 0.5);
+            
+            --card-bg: rgba(255, 255, 255, 0.8); /* White with opacity for glassmorphism */
+            --card-border: rgba(0, 0, 0, 0.1);
+            --card-border-light: rgba(0, 0, 0, 0.05);
+
+            --input-bg: var(--tertiary-bg);
+            --input-border: rgba(0, 0, 0, 0.15);
+            --input-focus-border: var(--amethyst-purple);
+            --input-focus-shadow: rgba(166, 74, 201, 0.4);
+
+            --modal-border: rgba(0, 0, 0, 0.1);
+            --button-hover-bg: #F0F2F5; /* Light gray for button hover */
+
+            --scrollbar-track-bg: #E9ECEF;
+            --scrollbar-thumb-bg: var(--amethyst-purple);
+            --scrollbar-thumb-hover-bg: var(--electric-blue);
+            --scrollbar-border: #E9ECEF;
+
+            --link-active-text: var(--amethyst-purple);
+            --link-inactive-text: #4B5563; /* Darker gray for inactive links */
+            --link-inactive-hover-text: #1F2937; /* Primary text color for hover */
+        }
+
 
         html, body, #root {
             width: 100%;
@@ -29,11 +92,12 @@
         }
         body {
             font-family: 'Inter', 'Poppins', 'Outfit', sans-serif;
-            background-color: var(--absolute-black);
-            color: #E0E0E0; /* Light gray for primary text */
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         ::-webkit-scrollbar {
@@ -41,31 +105,29 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: var(--deep-gray-2);
+            background: var(--scrollbar-track-bg);
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb {
-            background: var(--amethyst-purple);
+            background: var(--scrollbar-thumb-bg);
             border-radius: 4px;
-            border: 2px solid var(--deep-gray-2);
+            border: 2px solid var(--scrollbar-border);
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--electric-blue);
+            background: var(--scrollbar-thumb-hover-bg);
         }
 
-        /* General input placeholder styling */
         ::placeholder {
-            color: var(--placeholder-text-color) !important;
-            opacity: 1; /* Firefox */
+            color: var(--placeholder-text) !important;
+            opacity: 1; 
         }
-        :-ms-input-placeholder { /* Internet Explorer 10-11 */
-           color: var(--placeholder-text-color) !important;
+        :-ms-input-placeholder { 
+           color: var(--placeholder-text) !important;
         }
-        ::-ms-input-placeholder { /* Microsoft Edge */
-           color: var(--placeholder-text-color) !important;
+        ::-ms-input-placeholder { 
+           color: var(--placeholder-text) !important;
         }
 
-        /* Keyframes for animations */
         @keyframes fabPulse {
             0%, 100% { box-shadow: 0 0 2px 0px var(--emerald-lime), 0 0 0px 0px rgba(0, 255, 178, 0.1); }
             50% { box-shadow: 0 0 4px 1px var(--emerald-lime), 0 0 2px 1px rgba(0, 255, 178, 0.1); }
@@ -98,27 +160,49 @@
             transition: background-position 0.5s ease !important;
         }
         .button-gradient-hover:hover {
-            background-position: right center !important; /* change the direction of the change here */
+            background-position: right center !important; 
         }
 
         .glassmorphism-card {
-            background-color: rgba(30, 30, 30, 0.6); /* var(--deep-gray-2) with opacity */
+            background-color: var(--card-bg);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
             border-radius: 14px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
          
         .neon-glow-active {
-            text-shadow: 0 0 2px var(--emerald-lime), 0 0 4px rgba(0, 255, 178, 0.5);
-            color: var(--emerald-lime) !important;
+            text-shadow: 0 0 2px var(--link-active-text), 0 0 4px color-mix(in srgb, var(--link-active-text) 50%, transparent);
+            color: var(--link-active-text) !important;
         }
         
-        /* Input focus neon effect */
         .input-neon-focus:focus {
-            border-color: var(--emerald-lime);
-            box-shadow: 0 0 3px 0px rgba(0, 255, 178, 0.5);
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 3px 0px var(--input-focus-shadow);
         }
+        /* For themed selects to match input style */
+        .themed-select {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-primary);
+        }
+        .themed-select:focus {
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 3px 0px var(--input-focus-shadow);
+        }
+         .themed-select option {
+            background-color: var(--secondary-bg); /* Or tertiary-bg for consistency */
+            color: var(--text-primary);
+        }
+        .dark-date-picker::-webkit-calendar-picker-indicator {
+           filter: invert(var(--date-picker-indicator-invert, 1)) brightness(var(--date-picker-indicator-brightness, 0.7));
+        }
+        body.theme-light .dark-date-picker::-webkit-calendar-picker-indicator {
+          --date-picker-indicator-invert: 0;
+          --date-picker-indicator-brightness: 1;
+        }
+
 
         .tab-active-underline {
             position: relative;
@@ -131,7 +215,7 @@
             width: 100%;
             height: 2px;
             background: linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple));
-            animation: gradientText 3s ease infinite; /* Re-use gradient animation */
+            animation: gradientText 3s ease infinite; 
         }
 
         @keyframes countUp {
@@ -142,7 +226,6 @@
             animation: countUp 0.5s ease-out forwards;
         }
 
-        /* For transaction category tags */
         .category-tag {
           padding: 0.2rem 0.6rem;
           border-radius: 8px;
@@ -164,7 +247,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="antialiased">
+<body class="antialiased theme-dark"> <!-- Default to dark theme -->
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

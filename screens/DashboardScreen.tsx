@@ -10,8 +10,8 @@ import AddTransactionModal from '../components/AddTransactionModal';
 import TransactionListModal from '../components/TransactionListModal'; 
 import ExpensePieChart from '../components/ExpensePieChart';
 import MonthlySummaryChart from '../components/MonthlySummaryChart'; 
-import AiChatFab from '../components/AiChatFab'; // Importado
-import AiChatModal from '../components/AiChatModal'; // Importado
+import AiChatFab from '../components/AiChatFab'; 
+import AiChatModal from '../components/AiChatModal'; 
 import { PeriodType, Transaction, TransactionType } from '../types'; 
 import { DollarSignIcon, TrendingUpIcon, BarChart2Icon, PieChartIcon, COLORS } from '../constants'; 
 
@@ -24,7 +24,7 @@ const DashboardScreen: React.FC = () => {
   const [isProventosModalOpen, setIsProventosModalOpen] = useState(false);
   const [isDebitosModalOpen, setIsDebitosModalOpen] = useState(false);
   const [isMonthlyChartVisible, setIsMonthlyChartVisible] = useState(false); 
-  const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false); // Estado para o modal AI
+  const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false); 
 
   const summary = getMonthlySummary(activeMonthYear);
   const currentMonthData = getCurrentMonthData(); 
@@ -70,7 +70,7 @@ const DashboardScreen: React.FC = () => {
           value={formatCurrency(summary.accountBalance, currencySymbol)} 
           icon={<DollarSignIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
           gradientBg={COLORS.gradientBalance}
-          valueColor={'var(--absolute-black)'} 
+          valueColor={settings?.theme === 'light' ? 'var(--primary-bg)' : 'var(--absolute-black)'} // Ensure high contrast on gradient
           subValue={`Saldo Inicial: ${formatCurrency(currentMonthData.openingBalance || 0, currencySymbol)}`}
         />
         <SummaryCard 
