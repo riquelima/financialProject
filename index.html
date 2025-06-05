@@ -195,10 +195,10 @@
             background-color: var(--secondary-bg); /* Or tertiary-bg for consistency */
             color: var(--text-primary);
         }
-        .dark-date-picker::-webkit-calendar-picker-indicator {
+        input[type="date"]::-webkit-calendar-picker-indicator { /* Aplicar a todos os date pickers */
            filter: invert(var(--date-picker-indicator-invert, 1)) brightness(var(--date-picker-indicator-brightness, 0.7));
         }
-        body.theme-light .dark-date-picker::-webkit-calendar-picker-indicator {
+        body.theme-light input[type="date"]::-webkit-calendar-picker-indicator {
           --date-picker-indicator-invert: 0;
           --date-picker-indicator-brightness: 1;
         }

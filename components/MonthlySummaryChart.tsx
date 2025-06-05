@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { formatCurrency } from '../utils/formatters';
 import { COLORS, BarChart2Icon } from '../constants'; 

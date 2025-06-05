@@ -1,6 +1,7 @@
+
 {
   "name": "Copy of Copy of Controle Financeiro Pessoal 2",
   "description": "Um aplicativo web para controle financeiro pessoal, permitindo inserção manual de dados, histórico mensal e resumos visuais.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera"],
   "prompt": ""
 }
