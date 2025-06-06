@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../hooks/useAppContext';
 import { CogIcon, COLORS } from '../constants';
@@ -63,7 +61,7 @@ const SettingsScreen: React.FC = () => {
     }
   };
   
-  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-sm rounded-lg focus:ring-[var(--emerald-lime)] focus:border-[var(--emerald-lime)] block p-3 transition-colors duration-200 focus:outline-none input-neon-focus";
+  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-sm rounded-lg focus:ring-[var(--emerald-lime)] focus:border-[var(--emerald-lime)] block p-3 transition-colors duration-200 focus:outline-none input-neon-focus";
   const labelBaseClasses = "block text-sm font-medium text-[var(--text-secondary)] mb-1";
   const cardBaseClasses = "p-6 bg-[var(--secondary-bg)] rounded-xl shadow-lg";
 

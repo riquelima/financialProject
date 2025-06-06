@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles or component layers can be added here if needed */
+/* For example, to ensure body takes full height and uses theme variables for bg/color */
+body {
+  background-color: var(--primary-bg);
+  color: var(--text-primary);
+  font-family: theme('fontFamily.inter'), theme('fontFamily.poppins'), theme('fontFamily.outfit'), sans-serif;
+}
+
+/* Ensure placeholder styling uses the CSS variable approach */
+.placeholder-\[var\(--placeholder-text\)\]::placeholder {
+  color: var(--placeholder-text-color); /* Matches the variable used in index.html style */
+}

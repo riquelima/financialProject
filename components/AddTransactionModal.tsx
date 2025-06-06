@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useAppContext } from '../hooks/useAppContext'; 
@@ -74,7 +72,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
 
   const categories = transactionType === TransactionType.INCOME ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
   
-  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-[10px] focus:border-[var(--input-focus-border)] focus:ring-1 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus";
+  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-lg focus:border-[var(--input-focus-border)] focus:ring-1 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus"; // rounded-lg instead of rounded-[10px]
   const labelBaseClasses = "block text-xs font-semibold mb-1.5 text-[var(--text-secondary)]";
 
 
@@ -83,7 +81,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="transactionType" className={labelBaseClasses}>Tipo</label>
-          <div className="flex rounded-[10px] shadow-sm overflow-hidden border border-[var(--card-border-light)]">
+          <div className="flex rounded-lg shadow-sm overflow-hidden border border-[var(--card-border-light)]"> {/* rounded-lg */}
             <button
               type="button"
               onClick={() => { setTransactionType(TransactionType.INCOME); setCategory(''); }}
@@ -152,7 +150,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            className={`${inputBaseClasses} dark-date-picker`}
+            className={`${inputBaseClasses}`} // Removed dark-date-picker, handled by CSS var
           />
         </div>
 
@@ -160,13 +158,13 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
           <button 
             type="button" 
             onClick={onClose}
-            className="py-2.5 px-5 border border-[var(--card-border)] text-sm font-semibold rounded-[10px] text-[var(--text-secondary)] hover:bg-[var(--button-hover-bg)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--amethyst-purple)] transition-all duration-300 ease-in-out"
+            className="py-2.5 px-5 border border-[var(--card-border)] text-sm font-semibold rounded-lg text-[var(--text-secondary)] hover:bg-[var(--button-hover-bg)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--amethyst-purple)] transition-all duration-300 ease-in-out" // rounded-lg
           >
             Cancelar
           </button>
           <button 
             type="submit"
-            className="py-2.5 px-6 text-white text-sm font-semibold rounded-[10px] transition-all duration-300 ease-in-out transform hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--emerald-lime)] shadow-lg hover:shadow-xl button-gradient-hover"
+            className="py-2.5 px-6 text-white text-sm font-semibold rounded-lg transition-all duration-300 ease-in-out transform hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--emerald-lime)] shadow-lg hover:shadow-xl button-gradient-hover" // rounded-lg
             style={{ background: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple))', backgroundSize: '200% auto' }}
           >
             {transactionToEdit ? 'Salvar Alterações' : 'Adicionar'}

@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle Financeiro Pessoal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> REMOVED CDN -->
+    <link rel="stylesheet" href="/index.css"> <!-- ADDED LOCAL CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -26,7 +27,7 @@
             --text-primary: #E0E0E0;
             --text-secondary: #A0A0A0;
             --text-accent: var(--emerald-lime); /* Can be overridden by specific components */
-            --placeholder-text: rgba(224, 224, 224, 0.4);
+            --placeholder-text-color: rgba(224, 224, 224, 0.4); /* Changed variable name */
             
             --card-bg: rgba(30, 30, 30, 0.6); /* deep-gray-2 with opacity for glassmorphism */
             --card-border: rgba(255, 255, 255, 0.1);
@@ -48,6 +49,8 @@
             --link-active-text: var(--emerald-lime);
             --link-inactive-text: #A0A0A0; /* text-slate-400 equivalent */
             --link-inactive-hover-text: #E0E0E0; /* text-slate-200 equivalent */
+            --date-picker-indicator-invert: 1;
+            --date-picker-indicator-brightness: 0.7;
         }
 
         body.theme-light {
@@ -59,7 +62,7 @@
             --text-primary: #1F2937; /* Dark gray for text */
             --text-secondary: #6B7280; /* Medium gray for less important text */
             --text-accent: var(--amethyst-purple); /* Keep some pop, or choose a darker accent */
-            --placeholder-text: rgba(55, 65, 81, 0.5);
+            --placeholder-text-color: rgba(55, 65, 81, 0.5); /* Changed variable name */
             
             --card-bg: rgba(255, 255, 255, 0.8); /* White with opacity for glassmorphism */
             --card-border: rgba(0, 0, 0, 0.1);
@@ -81,6 +84,8 @@
             --link-active-text: var(--amethyst-purple);
             --link-inactive-text: #4B5563; /* Darker gray for inactive links */
             --link-inactive-hover-text: #1F2937; /* Primary text color for hover */
+            --date-picker-indicator-invert: 0;
+            --date-picker-indicator-brightness: 1;
         }
 
 
@@ -118,14 +123,14 @@
         }
 
         ::placeholder {
-            color: var(--placeholder-text) !important;
+            color: var(--placeholder-text-color) !important; /* Use updated variable */
             opacity: 1; 
         }
         :-ms-input-placeholder { 
-           color: var(--placeholder-text) !important;
+           color: var(--placeholder-text-color) !important; /* Use updated variable */
         }
         ::-ms-input-placeholder { 
-           color: var(--placeholder-text) !important;
+           color: var(--placeholder-text-color) !important; /* Use updated variable */
         }
 
         @keyframes fabPulse {
@@ -168,7 +173,7 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--card-border);
-            border-radius: 14px;
+            border-radius: 14px; /* Tailwind equivalent: rounded-xl or rounded-2xl depending on exact size */
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
          
@@ -195,13 +200,10 @@
             background-color: var(--secondary-bg); /* Or tertiary-bg for consistency */
             color: var(--text-primary);
         }
-        input[type="date"]::-webkit-calendar-picker-indicator { /* Aplicar a todos os date pickers */
-           filter: invert(var(--date-picker-indicator-invert, 1)) brightness(var(--date-picker-indicator-brightness, 0.7));
+        input[type="date"]::-webkit-calendar-picker-indicator { 
+           filter: invert(var(--date-picker-indicator-invert)) brightness(var(--date-picker-indicator-brightness));
         }
-        body.theme-light input[type="date"]::-webkit-calendar-picker-indicator {
-          --date-picker-indicator-invert: 0;
-          --date-picker-indicator-brightness: 1;
-        }
+        /* body.theme-light input[type="date"]::-webkit-calendar-picker-indicator is handled by CSS var change */
 
 
         .tab-active-underline {
@@ -227,10 +229,11 @@
         }
 
         .category-tag {
+          /* These can be Tailwind classes if preferred: py-1 px-2.5 rounded-lg text-xs font-medium capitalize */
           padding: 0.2rem 0.6rem;
           border-radius: 8px;
-          font-size: 0.7rem;
-          font-weight: 500;
+          font-size: 0.7rem; /* text-xs */
+          font-weight: 500; /* font-medium */
           text-transform: capitalize;
         }
     </style>
@@ -241,7 +244,7 @@
     "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
     "react/": "https://esm.sh/react@^19.1.0/",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.6.1",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.43.4"
   }
 }
 </script>
