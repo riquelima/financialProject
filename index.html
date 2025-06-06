@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle Financeiro Pessoal</title>
-    <!-- <script src="https://cdn.tailwindcss.com"></script> REMOVED CDN -->
-    <link rel="stylesheet" href="/index.css"> <!-- ADDED LOCAL CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- <link rel="stylesheet" href="/index.css"> REMOVED LOCAL CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
             --text-primary: #E0E0E0;
             --text-secondary: #A0A0A0;
             --text-accent: var(--emerald-lime); /* Can be overridden by specific components */
-            --placeholder-text-color: rgba(224, 224, 224, 0.4); /* Changed variable name */
+            --placeholder-text: rgba(224, 224, 224, 0.4); /* Reverted variable name */
             
             --card-bg: rgba(30, 30, 30, 0.6); /* deep-gray-2 with opacity for glassmorphism */
             --card-border: rgba(255, 255, 255, 0.1);
@@ -62,7 +62,7 @@
             --text-primary: #1F2937; /* Dark gray for text */
             --text-secondary: #6B7280; /* Medium gray for less important text */
             --text-accent: var(--amethyst-purple); /* Keep some pop, or choose a darker accent */
-            --placeholder-text-color: rgba(55, 65, 81, 0.5); /* Changed variable name */
+            --placeholder-text: rgba(55, 65, 81, 0.5); /* Reverted variable name */
             
             --card-bg: rgba(255, 255, 255, 0.8); /* White with opacity for glassmorphism */
             --card-border: rgba(0, 0, 0, 0.1);
@@ -123,14 +123,14 @@
         }
 
         ::placeholder {
-            color: var(--placeholder-text-color) !important; /* Use updated variable */
+            color: var(--placeholder-text) !important; /* Use reverted variable */
             opacity: 1; 
         }
         :-ms-input-placeholder { 
-           color: var(--placeholder-text-color) !important; /* Use updated variable */
+           color: var(--placeholder-text) !important; /* Use reverted variable */
         }
         ::-ms-input-placeholder { 
-           color: var(--placeholder-text-color) !important; /* Use updated variable */
+           color: var(--placeholder-text) !important; /* Use reverted variable */
         }
 
         @keyframes fabPulse {
@@ -243,8 +243,8 @@
     "react": "https://esm.sh/react@^19.1.0",
     "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
     "react/": "https://esm.sh/react@^19.1.0/",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.6.1",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.43.4"
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.6.2",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.49.10"
   }
 }
 </script>

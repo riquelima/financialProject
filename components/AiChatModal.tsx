@@ -219,7 +219,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, financialCon
           onKeyDown={handleKeyDown}
           placeholder="Digite sua mensagem..."
           rows={1}
-          className="flex-1 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg p-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--input-focus-border)] focus:border-[var(--input-focus-border)] resize-none input-neon-focus placeholder-[var(--placeholder-text-color)] text-sm max-h-24 overflow-y-auto"
+          className="flex-1 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg p-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--input-focus-border)] focus:border-[var(--input-focus-border)] resize-none input-neon-focus placeholder-[var(--placeholder-text)] text-sm max-h-24 overflow-y-auto" // Reverted placeholder variable
           style={{ scrollbarWidth: 'thin' }}
         />
         <button

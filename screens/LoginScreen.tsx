@@ -35,7 +35,7 @@ const LoginScreen: React.FC = () => {
       style={{ background: 'linear-gradient(160deg, var(--electric-blue), var(--primary-bg) 50%, var(--amethyst-purple))' }}
     >
       <div 
-        className="w-full max-w-md p-8 rounded-xl shadow-2xl" // rounded-xl
+        className="w-full max-w-md p-8 rounded-xl shadow-2xl"
         style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--card-border)' }}
       >
         <div className="text-center mb-10">
@@ -60,7 +60,7 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
               disabled={isLoading} 
-              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-lg focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50" // rounded-lg
+              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-lg focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50" // Reverted placeholder variable
               placeholder="Nome de usuário"
             />
           </div>
@@ -80,14 +80,14 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading} 
-              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text-color)] text-base rounded-lg focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50" // rounded-lg
+              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-lg focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50" // Reverted placeholder variable
               placeholder="Sua senha"
             />
           </div>
 
           {localError && !isLoading && ( 
             <p 
-              className="text-sm text-center p-2.5 rounded-lg" // rounded-lg
+              className="text-sm text-center p-2.5 rounded-lg"
               style={{ backgroundColor: 'color-mix(in srgb, var(--coral-red) 15%, transparent)', color: 'var(--coral-red)'}}
             >
               {localError}
@@ -98,7 +98,7 @@ const LoginScreen: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading} 
-              className="w-full py-3.5 px-5 text-white font-semibold rounded-lg transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-[var(--amethyst-purple)]/50 shadow-lg hover:shadow-xl button-gradient-hover disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center" // rounded-lg
+              className="w-full py-3.5 px-5 text-white font-semibold rounded-lg transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-[var(--amethyst-purple)]/50 shadow-lg hover:shadow-xl button-gradient-hover disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               style={{ background: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple))', backgroundSize: '200% auto' }}
             >
               {isLoading ? (
