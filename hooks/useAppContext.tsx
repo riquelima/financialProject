@@ -1,6 +1,7 @@
 
 
 
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, BENEFIT_CATEGORIES, FinancialPeriodData } from '../types';
@@ -742,7 +743,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (err.message && typeof err.message === 'string' && err.message.trim() !== "") parts.push(`Detalhe: ${err.message.trim()}`);
         
         if (err.code && typeof err.code === 'string' && err.code.trim() !== "") parts.push(`Código: ${err.code.trim()}`);
-        else if (err.code) parts.push(`Código: ${String(err.code)}`);
+        else if (err.code) parts.push(`Código: ${String(err.code)}`); 
 
         if (err.details && typeof err.details === 'string' && err.details.trim() !== "") parts.push(`Info: ${err.details.trim()}`);
         if (err.hint && typeof err.hint === 'string' && err.hint.trim() !== "") parts.push(`Dica: ${err.hint.trim()}`);
@@ -843,22 +844,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const allIncome = getAllTransactionsForMonth(monthYear, TransactionType.INCOME);
     const allExpenses = getAllTransactionsForMonth(monthYear, TransactionType.EXPENSE);
 
-    const totalIncome = allIncome.reduce((sum, t) => sum + t.amount, 0);
-    const totalExpenses = allExpenses.reduce((sum, t) => sum + t.amount, 0);
+    const totalIncome = allIncome.reduce((sum, t: Transaction) => sum + t.amount, 0);
+    const totalExpenses = allExpenses.reduce((sum, t: Transaction) => sum + t.amount, 0);
     const netSavings = totalIncome - totalExpenses;
     const accountBalance = (monthDataToUse.openingBalance || 0) + netSavings;
 
     const creditCardSpent = allExpenses
-      .filter(t => t.category === "Cartão de Crédito")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter((t: Transaction) => t.category === "Cartão de Crédito")
+      .reduce((sum, t: Transaction) => sum + t.amount, 0);
     
     const creditCardRemainingLimit = monthDataToUse.creditCardLimit !== undefined && monthDataToUse.creditCardLimit !== null
       ? monthDataToUse.creditCardLimit - creditCardSpent 
       : undefined;
 
     const totalBenefits = allIncome
-      .filter(t => BENEFIT_CATEGORIES.includes(t.category))
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter((t: Transaction) => BENEFIT_CATEGORIES.includes(t.category))
+      .reduce((sum, t: Transaction) => sum + t.amount, 0);
 
     return {
       totalIncome,
