@@ -1,3 +1,4 @@
+
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -10,7 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "module": "ESNext",
-    "moduleResolution": "bundler", // or "node" if preferred, "bundler" is modern
+    "moduleResolution": "node16", 
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
