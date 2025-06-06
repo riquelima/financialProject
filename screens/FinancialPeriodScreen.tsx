@@ -56,7 +56,7 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
   return (
     <div className="p-4 space-y-6">
       <MonthNavigator />
-      <header className={`p-4 bg-gradient-to-r from-${COLORS.petroleumBlue} to-${COLORS.deepPurple} rounded-lg shadow-md`}>
+      <header className={`p-4 bg-gradient-to-r from-[${COLORS.petroleumBlue}] to-[${COLORS.deepPurple}] rounded-lg shadow-md`}>
         <h1 className="text-2xl font-bold text-white text-center">🗓️ {fullTitle}</h1>
       </header>
 

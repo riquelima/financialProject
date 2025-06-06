@@ -7,7 +7,7 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-  backdropBlur?: boolean;
+  backdropBlur?: boolean; // Kept for potential use in dark theme, but new theme is mostly opaque
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md', backdropBlur = true }) => {
@@ -39,14 +39,14 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
     '2xl': 'max-w-2xl',
   };
 
-  // Updated to use CSS variables for background color if backdrop is transparent
-  // Assuming --primary-bg-rgb is set for rgba() usage
-  const backdropBgColor = backdropBlur ? `rgba(var(--primary-bg-rgb, 0,0,0), 0.8)` : `rgba(var(--primary-bg-rgb, 0,0,0), 0.95)`;
+  // Use primary-bg-rgb with a higher opacity for the new theme
+  const backdropBgColor = `rgba(var(--primary-bg-rgb, 30, 30, 30), 0.6)`; // Adjusted default for dark theme
+  const currentBackdropBlur = document.body.classList.contains('theme-light') ? false : backdropBlur;
 
 
   return (
     <div 
-      className={`fixed inset-0 flex items-center justify-center p-4 z-[60] transition-opacity duration-300 ease-in-out ${backdropBlur ? 'backdrop-blur-md' : ''}`}
+      className={`fixed inset-0 flex items-center justify-center p-4 z-[60] transition-opacity duration-300 ease-in-out ${currentBackdropBlur ? 'backdrop-blur-sm' : ''}`} // Softer blur if used
       style={{ backgroundColor: backdropBgColor }}
       onClick={onClose}
       role="dialog"
@@ -54,12 +54,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
       aria-labelledby={title ? "modal-title" : undefined}
     >
       <div 
-        style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--modal-border)'}}
-        className={`rounded-[14px] shadow-2xl p-6 m-4 w-full ${sizeClasses[size]} transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-modalShow`}
+        style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--modal-border)', boxShadow: 'var(--ref-box-shadow)'}} // Use ref-box-shadow
+        className={`rounded-[20px] p-6 m-4 w-full ${sizeClasses[size]} transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-modalShow`} // More rounded
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-5">
-          {title && <h2 id="modal-title" className="text-2xl font-semibold" style={{color: 'var(--text-primary)'}}>{title}</h2>}
+          {title && <h2 id="modal-title" className="text-xl font-semibold" style={{color: 'var(--text-primary)'}}>{title}</h2>} {/* Poppins Semibold, smaller title */}
           <button 
             onClick={onClose} 
             className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-full hover:bg-[var(--button-hover-bg)]"

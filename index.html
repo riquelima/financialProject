@@ -8,82 +8,122 @@
     <!-- <link rel="stylesheet" href="/index.css"> REMOVED LOCAL CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Accent Colors (remain constant across themes) */
+            /* Original Accent Colors (can be reused or adapted) */
             --emerald-lime: #00FFB2;
             --amethyst-purple: #A64AC9;
-            --electric-blue: #00BFFF;
+            --electric-blue: #00BFFF; /* Original electric blue, can be distinct from ref-blue-vibrant */
             --soft-magenta: #FF55AA;
-            --coral-red: #FF6B6B; /* For expenses */
+            --coral-red: #FF6B6B; /* For expenses, good contrast */
 
-            /* Dark Theme (Default) */
-            --primary-bg: #0D0D0D; /* absolute-black */
-            --primary-bg-rgb: 13, 13, 13; /* For rgba() */
-            --secondary-bg: #121212; /* deep-gray-1 */
-            --tertiary-bg: #1E1E1E; /* deep-gray-2 */
+            /* New Reference Theme Colors (Print 2) */
+            --ref-blue-vibrant: #6366F1;
+            --ref-yellow-soft: #FFC75F;
+            --ref-gray-light-bg: #F5F7FA; 
+            --ref-text-dark: #374151;    
+            --ref-text-darker: #111827;  
+            --ref-white: #FFFFFF;
+            --ref-card-border: #E5E7EB; 
+            --ref-box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            --ref-button-hover-brightness: 90%;
+
+            /* Dark Theme (Fallback/Adjusted) */
+            --dark-primary-bg: #111827; /* Darker blue-gray */
+            --dark-primary-bg-rgb: 17, 24, 39;
+            --dark-secondary-bg: #1F2937; /* Card backgrounds */
+            --dark-tertiary-bg: #374151; /* Input backgrounds / Lighter elements */
             
-            --text-primary: #E0E0E0;
-            --text-secondary: #A0A0A0;
-            --text-accent: var(--emerald-lime); /* Can be overridden by specific components */
-            --placeholder-text: rgba(224, 224, 224, 0.4); /* Reverted variable name */
+            --dark-text-primary: #F3F4F6; /* Light gray for text */
+            --dark-text-secondary: #9CA3AF; /* Medium gray */
+            --dark-text-accent: var(--ref-blue-vibrant); /* Use new blue for accent in dark theme */
+            --dark-placeholder-text: rgba(156, 163, 175, 0.5); 
             
-            --card-bg: rgba(30, 30, 30, 0.6); /* deep-gray-2 with opacity for glassmorphism */
-            --card-border: rgba(255, 255, 255, 0.1);
-            --card-border-light: rgba(255, 255, 255, 0.05); /* Lighter border for internal divisions */
+            --dark-card-bg: var(--dark-secondary-bg);
+            --dark-card-border: #4B5563; /* Darker border */
+            --dark-card-border-light: #374151;
 
-            --input-bg: var(--tertiary-bg);
-            --input-border: rgba(255, 255, 255, 0.1);
-            --input-focus-border: var(--emerald-lime);
-            --input-focus-shadow: rgba(0, 255, 178, 0.5);
+            --dark-input-bg: var(--dark-tertiary-bg);
+            --dark-input-border: var(--dark-card-border);
+            --dark-input-focus-border: var(--ref-blue-vibrant);
+            --dark-input-focus-shadow: rgba(99, 102, 241, 0.5);
 
-            --modal-border: rgba(255, 255, 255, 0.1);
-            --button-hover-bg: var(--tertiary-bg);
+            --dark-modal-border: var(--dark-card-border);
+            --dark-button-hover-bg: var(--dark-tertiary-bg);
 
-            --scrollbar-track-bg: var(--tertiary-bg);
-            --scrollbar-thumb-bg: var(--amethyst-purple);
-            --scrollbar-thumb-hover-bg: var(--electric-blue);
-            --scrollbar-border: var(--tertiary-bg);
+            --dark-scrollbar-track-bg: var(--dark-tertiary-bg);
+            --dark-scrollbar-thumb-bg: var(--ref-blue-vibrant);
+            --dark-scrollbar-thumb-hover-bg: #4F46E5; /* Darker vibrant blue */
+            --dark-scrollbar-border: var(--dark-tertiary-bg);
 
-            --link-active-text: var(--emerald-lime);
-            --link-inactive-text: #A0A0A0; /* text-slate-400 equivalent */
-            --link-inactive-hover-text: #E0E0E0; /* text-slate-200 equivalent */
-            --date-picker-indicator-invert: 1;
-            --date-picker-indicator-brightness: 0.7;
+            --dark-link-active-text: var(--ref-blue-vibrant);
+            --dark-link-inactive-text: var(--dark-text-secondary);
+            --dark-link-inactive-hover-text: var(--dark-text-primary);
+            --dark-date-picker-indicator-invert: 1;
+            --dark-date-picker-indicator-brightness: 0.8;
+
+
+            /* Default to Dark Theme Variables (will be overridden by .theme-light) */
+            --primary-bg: var(--dark-primary-bg);
+            --primary-bg-rgb: var(--dark-primary-bg-rgb);
+            --secondary-bg: var(--dark-secondary-bg);
+            --tertiary-bg: var(--dark-tertiary-bg);
+            --text-primary: var(--dark-text-primary);
+            --text-secondary: var(--dark-text-secondary);
+            --text-accent: var(--dark-text-accent);
+            --placeholder-text: var(--dark-placeholder-text);
+            --card-bg: var(--dark-card-bg);
+            --card-border: var(--dark-card-border);
+            --card-border-light: var(--dark-card-border-light);
+            --input-bg: var(--dark-input-bg);
+            --input-border: var(--dark-input-border);
+            --input-focus-border: var(--dark-input-focus-border);
+            --input-focus-shadow: var(--dark-input-focus-shadow);
+            --modal-border: var(--dark-modal-border);
+            --button-hover-bg: var(--dark-button-hover-bg);
+            --scrollbar-track-bg: var(--dark-scrollbar-track-bg);
+            --scrollbar-thumb-bg: var(--dark-scrollbar-thumb-bg);
+            --scrollbar-thumb-hover-bg: var(--dark-scrollbar-thumb-hover-bg);
+            --scrollbar-border: var(--dark-scrollbar-border);
+            --link-active-text: var(--dark-link-active-text);
+            --link-inactive-text: var(--dark-link-inactive-text);
+            --link-inactive-hover-text: var(--dark-link-inactive-hover-text);
+            --date-picker-indicator-invert: var(--dark-date-picker-indicator-invert);
+            --date-picker-indicator-brightness: var(--dark-date-picker-indicator-brightness);
         }
 
         body.theme-light {
-            --primary-bg: #F0F2F5; /* Light gray */
-            --primary-bg-rgb: 240, 242, 245; /* For rgba() */
-            --secondary-bg: #FFFFFF; /* White */
-            --tertiary-bg: #E9ECEF; /* Lighter gray for inputs/alternates */
+            --primary-bg: var(--ref-gray-light-bg);
+            --primary-bg-rgb: 245, 247, 250;
+            --secondary-bg: var(--ref-white); 
+            --tertiary-bg: #F9FAFB; 
             
-            --text-primary: #1F2937; /* Dark gray for text */
-            --text-secondary: #6B7280; /* Medium gray for less important text */
-            --text-accent: var(--amethyst-purple); /* Keep some pop, or choose a darker accent */
-            --placeholder-text: rgba(55, 65, 81, 0.5); /* Reverted variable name */
+            --text-primary: var(--ref-text-darker);
+            --text-secondary: var(--ref-text-dark);
+            --text-accent: var(--ref-blue-vibrant);
+            --placeholder-text: rgba(55, 65, 81, 0.5); 
             
-            --card-bg: rgba(255, 255, 255, 0.8); /* White with opacity for glassmorphism */
-            --card-border: rgba(0, 0, 0, 0.1);
-            --card-border-light: rgba(0, 0, 0, 0.05);
+            --card-bg: var(--ref-white);
+            --card-border: var(--ref-card-border);
+            --card-border-light: #EFF1F3; /* Lighter internal border for light theme */
 
-            --input-bg: var(--tertiary-bg);
-            --input-border: rgba(0, 0, 0, 0.15);
-            --input-focus-border: var(--amethyst-purple);
-            --input-focus-shadow: rgba(166, 74, 201, 0.4);
+            --input-bg: var(--ref-white);
+            --input-border: var(--ref-card-border);
+            --input-focus-border: var(--ref-blue-vibrant);
+            --input-focus-shadow: rgba(99, 102, 241, 0.3);
 
-            --modal-border: rgba(0, 0, 0, 0.1);
-            --button-hover-bg: #F0F2F5; /* Light gray for button hover */
+            --modal-border: var(--ref-card-border);
+            --button-hover-bg: #4F46E5; /* Slightly darker blue for hover */
 
-            --scrollbar-track-bg: #E9ECEF;
-            --scrollbar-thumb-bg: var(--amethyst-purple);
-            --scrollbar-thumb-hover-bg: var(--electric-blue);
-            --scrollbar-border: #E9ECEF;
+            --scrollbar-track-bg: var(--tertiary-bg);
+            --scrollbar-thumb-bg: var(--ref-blue-vibrant);
+            --scrollbar-thumb-hover-bg: #4F46E5;
+            --scrollbar-border: var(--tertiary-bg);
 
-            --link-active-text: var(--amethyst-purple);
-            --link-inactive-text: #4B5563; /* Darker gray for inactive links */
-            --link-inactive-hover-text: #1F2937; /* Primary text color for hover */
+            --link-active-text: var(--ref-blue-vibrant);
+            --link-inactive-text: var(--ref-text-dark);
+            --link-inactive-hover-text: var(--ref-blue-vibrant);
             --date-picker-indicator-invert: 0;
             --date-picker-indicator-brightness: 1;
         }
@@ -96,7 +136,7 @@
             padding: 0;
         }
         body {
-            font-family: 'Inter', 'Poppins', 'Outfit', sans-serif;
+            font-family: 'Poppins', 'Inter', 'Outfit', sans-serif; /* Poppins as primary */
             background-color: var(--primary-bg);
             color: var(--text-primary);
             overflow-x: hidden;
@@ -123,34 +163,33 @@
         }
 
         ::placeholder {
-            color: var(--placeholder-text) !important; /* Use reverted variable */
+            color: var(--placeholder-text) !important; 
             opacity: 1; 
+            font-weight: 400; /* Poppins regular for placeholder */
         }
         :-ms-input-placeholder { 
-           color: var(--placeholder-text) !important; /* Use reverted variable */
+           color: var(--placeholder-text) !important;
+           font-weight: 400;
         }
         ::-ms-input-placeholder { 
-           color: var(--placeholder-text) !important; /* Use reverted variable */
+           color: var(--placeholder-text) !important;
+           font-weight: 400;
         }
 
-        @keyframes fabPulse {
-            0%, 100% { box-shadow: 0 0 2px 0px var(--emerald-lime), 0 0 0px 0px rgba(0, 255, 178, 0.1); }
-            50% { box-shadow: 0 0 4px 1px var(--emerald-lime), 0 0 2px 1px rgba(0, 255, 178, 0.1); }
+        @keyframes fabPulse { /* Kept for FAB, can be adjusted or removed if FAB style changes drastically */
+            0%, 100% { box-shadow: 0 0 3px 0px var(--ref-blue-vibrant), 0 0 0px 0px rgba(99, 102, 241, 0.2); }
+            50% { box-shadow: 0 0 6px 2px var(--ref-blue-vibrant), 0 0 3px 2px rgba(99, 102, 241, 0.2); }
         }
         
+        /* Gradient text animation might not be used in new theme, but kept for now */
         @keyframes gradientText {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        @keyframes subtleShine {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-
-        .gradient-text {
-            background: linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple), var(--electric-blue));
+        .gradient-text { /* Use new accent colors if this class is reused */
+            background: linear-gradient(90deg, var(--ref-blue-vibrant), var(--ref-yellow-soft), var(--electric-blue));
             background-size: 200% 200%;
             -webkit-background-clip: text;
             background-clip: text;
@@ -158,69 +197,96 @@
             animation: gradientText 5s ease infinite;
         }
 
-        .button-gradient-hover {
-            position: relative;
-            overflow: hidden;
-            background-size: 200% auto !important;
-            transition: background-position 0.5s ease !important;
+        .ref-card-style { /* New base card style for print2 */
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px; 
+            box-shadow: var(--ref-box-shadow);
+            padding: 16px; /* Default padding */
+            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .button-gradient-hover:hover {
-            background-position: right center !important; 
-        }
-
+        /* Apply to existing glassmorphism or replace its usage */
         .glassmorphism-card {
             background-color: var(--card-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            /* backdrop-filter: blur(10px); Removed for print2 style, can be conditional if glassmorphism is kept for dark theme */
+            /* -webkit-backdrop-filter: blur(10px); */
             border: 1px solid var(--card-border);
-            border-radius: 14px; /* Tailwind equivalent: rounded-xl or rounded-2xl depending on exact size */
-            transition: background-color 0.3s ease, border-color 0.3s ease;
+            border-radius: 20px; /* Updated border-radius */
+            box-shadow: var(--ref-box-shadow); /* Added box-shadow */
+            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        body.theme-dark .glassmorphism-card { /* Optional: re-enable backdrop for dark theme if desired */
+             /* backdrop-filter: blur(8px); */
+             /* -webkit-backdrop-filter: blur(8px); */
+             /* box-shadow: none; /* Dark theme might not need this specific shadow */
         }
          
-        .neon-glow-active {
-            text-shadow: 0 0 2px var(--link-active-text), 0 0 4px color-mix(in srgb, var(--link-active-text) 50%, transparent);
+        .neon-glow-active { /* Adapt for new theme, less "neon", more "active" */
             color: var(--link-active-text) !important;
+            font-weight: 600; /* Poppins medium/semibold for active */
+            /* text-shadow: 0 0 5px color-mix(in srgb, var(--link-active-text) 30%, transparent); */ /* Removed strong neon shadow */
         }
         
-        .input-neon-focus:focus {
-            border-color: var(--input-focus-border);
-            box-shadow: 0 0 3px 0px var(--input-focus-shadow);
+        .input-neon-focus:focus { /* Adapt for new theme */
+            border-color: var(--input-focus-border) !important; /* Ensure !important if Tailwind overrides */
+            box-shadow: 0 0 0 2px var(--input-focus-shadow) !important; /* Softer focus ring */
+            outline: none;
         }
-        /* For themed selects to match input style */
         .themed-select {
             background-color: var(--input-bg);
             border: 1px solid var(--input-border);
             color: var(--text-primary);
+            border-radius: 12px; /* More rounded */
+            padding: 10px 12px; /* Adjust padding */
+            font-weight: 500; /* Poppins medium */
         }
         .themed-select:focus {
-            border-color: var(--input-focus-border);
-            box-shadow: 0 0 3px 0px var(--input-focus-shadow);
+            border-color: var(--input-focus-border) !important;
+            box-shadow: 0 0 0 2px var(--input-focus-shadow) !important;
+            outline: none;
         }
-         .themed-select option {
-            background-color: var(--secondary-bg); /* Or tertiary-bg for consistency */
+        .themed-select option {
+            background-color: var(--secondary-bg); 
             color: var(--text-primary);
+            font-weight: 400;
         }
         input[type="date"]::-webkit-calendar-picker-indicator { 
-           filter: invert(var(--date-picker-indicator-invert)) brightness(var(--date-picker-indicator-brightness));
-        }
-        /* body.theme-light input[type="date"]::-webkit-calendar-picker-indicator is handled by CSS var change */
-
-
-        .tab-active-underline {
-            position: relative;
-        }
-        .tab-active-underline::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple));
-            animation: gradientText 3s ease infinite; 
+           filter: invert(var(--date-picker-indicator-invert)) brightness(var(--date-picker-indicator-brightness)) opacity(0.7);
         }
 
-        @keyframes countUp {
+        .ref-button-primary {
+            background-color: var(--ref-blue-vibrant);
+            color: var(--ref-white);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600; /* Poppins semibold */
+            transition: filter 0.3s ease, transform 0.3s ease;
+            text-align: center;
+        }
+        .ref-button-primary:hover {
+            filter: brightness(var(--ref-button-hover-brightness));
+            transform: scale(1.03);
+        }
+        .ref-button-secondary {
+            background-color: transparent;
+            color: var(--ref-blue-vibrant);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 1px solid var(--ref-blue-vibrant);
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+        }
+        .ref-button-secondary:hover {
+            background-color: color-mix(in srgb, var(--ref-blue-vibrant) 10%, transparent);
+            transform: scale(1.03);
+        }
+        
+        .tab-active-underline::after { /* Gradient might be too much for print2, consider solid color */
+            background: var(--ref-blue-vibrant); /* Solid active color */
+            animation: none; /* Remove gradient animation if changing to solid */
+        }
+
+        @keyframes countUp { /* Keep animation */
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
@@ -229,11 +295,10 @@
         }
 
         .category-tag {
-          /* These can be Tailwind classes if preferred: py-1 px-2.5 rounded-lg text-xs font-medium capitalize */
           padding: 0.2rem 0.6rem;
           border-radius: 8px;
-          font-size: 0.7rem; /* text-xs */
-          font-weight: 500; /* font-medium */
+          font-size: 0.7rem; 
+          font-weight: 500; /* Poppins medium */
           text-transform: capitalize;
         }
     </style>
@@ -250,7 +315,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="antialiased theme-dark"> <!-- Default to dark theme -->
+<body class="antialiased theme-light"> <!-- Default to new light theme -->
     <div id="root"></div>
     <script type="module" src="./index.js"></script>
 <script type="module" src="/index.tsx"></script>

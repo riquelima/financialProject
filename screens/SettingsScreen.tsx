@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../hooks/useAppContext';
 import { CogIcon, COLORS } from '../constants';
@@ -19,7 +20,7 @@ const SettingsScreen: React.FC = () => {
     if (settings) {
       setUserNameDisplay(settings.userNameDisplay || currentUsername || '');
       setCurrencySymbol(settings.currencySymbol);
-      setSelectedTheme(settings.theme || 'dark');
+      setSelectedTheme(settings.theme || 'light'); // Default to light for settings page if new theme is light
     }
   }, [settings, currentUsername]);
 
@@ -61,9 +62,9 @@ const SettingsScreen: React.FC = () => {
     }
   };
   
-  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-sm rounded-lg focus:ring-[var(--emerald-lime)] focus:border-[var(--emerald-lime)] block p-3 transition-colors duration-200 focus:outline-none input-neon-focus"; // Reverted placeholder variable
-  const labelBaseClasses = "block text-sm font-medium text-[var(--text-secondary)] mb-1";
-  const cardBaseClasses = "p-6 bg-[var(--secondary-bg)] rounded-xl shadow-lg";
+  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-sm rounded-xl focus:ring-1 focus:ring-[var(--input-focus-border)]/50 focus:border-[var(--input-focus-border)] block p-3 transition-colors duration-200 focus:outline-none input-neon-focus font-normal"; // Poppins normal, more rounded
+  const labelBaseClasses = "block text-sm font-medium text-[var(--text-secondary)] mb-1.5"; // Poppins medium
+  const cardBaseClasses = "p-6 bg-[var(--secondary-bg)] rounded-[20px] shadow-xl border border-[var(--card-border)]"; // New card style
 
 
   if (!settings) {
@@ -71,15 +72,15 @@ const SettingsScreen: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-8">
-      <div className={`flex items-center space-x-3 p-4 bg-gradient-to-r from-${COLORS.petroleumBlue} to-${COLORS.deepPurple} rounded-lg shadow-md`}>
-        <CogIcon className="w-8 h-8 text-white" />
-        <h1 className="text-3xl font-bold text-white">Ajustes</h1>
+    <div className="p-4 md:p-6 space-y-6"> {/* Adjusted spacing */}
+      <div className={`flex items-center space-x-3 p-4 rounded-xl shadow-lg`} style={{background: 'var(--ref-blue-vibrant)'}}>
+        <CogIcon className="w-7 h-7 text-white" />
+        <h1 className="text-2xl font-bold text-white">Ajustes</h1> {/* Poppins Bold */}
       </div>
 
       <form onSubmit={handleSaveSettings} className={`${cardBaseClasses} space-y-6`}>
         <div>
-          <h2 className={`text-xl font-semibold text-[var(--text-accent)] mb-4 border-b border-[var(--card-border-light)] pb-2`}>Configurações Gerais</h2>
+          <h2 className={`text-lg font-semibold text-[var(--text-accent)] mb-3 border-b border-[var(--card-border-light)] pb-2`}>Configurações Gerais</h2> {/* Poppins Semibold */}
           <div className="space-y-4">
             <div>
               <label htmlFor="userNameDisplay" className={labelBaseClasses}>Nome de Exibição (Opcional)</label>
@@ -110,17 +111,17 @@ const SettingsScreen: React.FC = () => {
                 id="themeSelector"
                 value={selectedTheme}
                 onChange={(e) => setSelectedTheme(e.target.value as 'dark' | 'light')}
-                className={`${inputBaseClasses} themed-select`}
+                className={`${inputBaseClasses} themed-select`} // themed-select updated in index.html
               >
-                <option value="dark">Escuro (Neon)</option>
-                <option value="light">Claro</option>
+                <option value="light">Claro (Novo)</option>
+                <option value="dark">Escuro (Adaptado)</option>
               </select>
             </div>
           </div>
         </div>
 
         <div>
-          <h2 className={`text-xl font-semibold text-[var(--text-accent)] mb-4 border-b border-[var(--card-border-light)] pb-2`}>
+          <h2 className={`text-lg font-semibold text-[var(--text-accent)] mb-3 border-b border-[var(--card-border-light)] pb-2`}> {/* Poppins Semibold */}
             Dados para {getMonthName(activeMonthYear)}
           </h2>
           <div className="space-y-4">
@@ -156,7 +157,7 @@ const SettingsScreen: React.FC = () => {
         <div className="pt-4">
           <button 
             type="submit"
-            className={`w-full py-3 px-5 bg-gradient-to-r from-${COLORS.petroleumBlue} via-${COLORS.deepPurple} to-${COLORS.discreetNeonGreen} text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-[var(--emerald-lime)]/50 transition-all duration-300 ease-in-out transform hover:scale-102 active:scale-100 shadow-lg hover:shadow-xl`}
+            className={`w-full ref-button-primary py-3 text-base shadow-md hover:shadow-lg`} // Use new button class
           >
             Salvar Alterações
           </button>
@@ -164,15 +165,15 @@ const SettingsScreen: React.FC = () => {
       </form>
       
       <div className={cardBaseClasses}>
-          <h3 className={`text-lg font-semibold text-[var(--text-primary)] mb-2`}>Backup e Sincronização</h3>
-          <p className={`text-sm text-[var(--text-secondary)]`}>Seus dados são salvos automaticamente no Supabase quando você realiza alterações.</p>
+          <h3 className={`text-lg font-semibold text-[var(--text-primary)] mb-2`}>Backup e Sincronização</h3> {/* Poppins Semibold */}
+          <p className={`text-sm text-[var(--text-secondary)] font-normal`}>Seus dados são salvos automaticamente no Supabase quando você realiza alterações.</p> {/* Poppins Normal */}
       </div>
 
       <div className={cardBaseClasses}>
-        <h3 className={`text-lg font-semibold text-[var(--text-primary)] mb-3`}>Sessão</h3>
+        <h3 className={`text-lg font-semibold text-[var(--text-primary)] mb-3`}>Sessão</h3> {/* Poppins Semibold */}
         <button 
           onClick={handleLogout}
-          className={`w-full py-2.5 px-5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg focus:outline-none focus:ring-4 focus:ring-red-800/50 transition-colors duration-300 ease-in-out shadow-md hover:shadow-lg`}
+          className={`w-full py-2.5 px-5 bg-[var(--coral-red)] hover:brightness-90 text-white font-semibold rounded-xl transition-all duration-300 ease-in-out shadow-md hover:shadow-lg`} // Poppins Semibold, more rounded
         >
           Sair do Aplicativo
         </button>

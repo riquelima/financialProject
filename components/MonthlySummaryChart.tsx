@@ -1,6 +1,7 @@
 
 
 
+
 import React from 'react';
 import { formatCurrency } from '../utils/formatters';
 import { COLORS, BarChart2Icon } from '../constants'; 
@@ -20,24 +21,24 @@ const MonthlySummaryChart: React.FC<MonthlySummaryChartProps> = ({ summary, curr
   const incomeHeightPercentage = (totalIncome / maxVal) * 100;
   const expenseHeightPercentage = (totalExpenses / maxVal) * 100;
 
-  const barBaseClass = "w-3/5 sm:w-2/5 rounded-t-lg transition-all duration-500 ease-out flex flex-col justify-end items-center p-2 relative";
-  const labelTextClass = "text-xs font-medium text-center mt-2"; 
-  const valueBelowLabelClass = "text-sm font-semibold text-center mt-1"; 
+  const barBaseClass = "w-3/5 sm:w-2/5 rounded-lg transition-all duration-500 ease-out flex flex-col justify-end items-center p-2 relative shadow-md"; // More rounded, softer shadow
+  const labelTextClass = "text-xs font-medium text-center mt-2"; // Poppins Medium
+  const valueBelowLabelClass = "text-sm font-semibold text-center mt-1"; // Poppins Semibold
 
   return (
     <div 
-      style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--card-border)' }}
-      className="p-4 sm:p-6 rounded-xl shadow-xl"
+      style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--card-border)', borderRadius: '20px', boxShadow: 'var(--ref-box-shadow)' }}
+      className="p-4 sm:p-6"
     >
       <div className="flex items-center mb-6"> 
-        <BarChart2Icon className="w-6 h-6 mr-2" style={{ color: 'var(--electric-blue)' }} />
-        <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <BarChart2Icon className="w-6 h-6 mr-2" style={{ color: 'var(--ref-blue-vibrant)' }} /> {/* Use new blue for icon */}
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}> {/* Poppins Semibold */}
           Resumo do Mês: Proventos vs Débitos
         </h3>
       </div>
       
       {totalIncome === 0 && totalExpenses === 0 ? (
-        <p className="text-center py-8" style={{color: 'var(--text-secondary)'}}>
+        <p className="text-center py-8 font-normal" style={{color: 'var(--text-secondary)'}}> {/* Poppins Normal */}
           Não há dados de proventos ou débitos para exibir no gráfico este mês.
         </p>
       ) : (
@@ -47,12 +48,12 @@ const MonthlySummaryChart: React.FC<MonthlySummaryChartProps> = ({ summary, curr
               className={barBaseClass}
               style={{ 
                 height: `${incomeHeightPercentage > 5 ? incomeHeightPercentage : 5}%`, 
-                backgroundColor: 'var(--emerald-lime)',
-                boxShadow: `0 0 10px 1px color-mix(in srgb, var(--emerald-lime) 30%, transparent)`
+                backgroundColor: 'var(--ref-blue-vibrant)', // Blue for income
+                // boxShadow: `0 0 8px 1px color-mix(in srgb, var(--ref-blue-vibrant) 30%, transparent)` // Softer shadow
               }}
             >
             </div>
-            <span className={labelTextClass} style={{ color: 'var(--emerald-lime)' }}>Proventos</span>
+            <span className={labelTextClass} style={{ color: 'var(--ref-blue-vibrant)' }}>Proventos</span>
             <span className={valueBelowLabelClass} style={{ color: 'var(--text-primary)' }}>
               {formatCurrency(totalIncome, currencySymbol)}
             </span>
@@ -63,8 +64,8 @@ const MonthlySummaryChart: React.FC<MonthlySummaryChartProps> = ({ summary, curr
               className={barBaseClass}
               style={{ 
                 height: `${expenseHeightPercentage > 5 ? expenseHeightPercentage : 5}%`, 
-                backgroundColor: 'var(--coral-red)',
-                boxShadow: `0 0 10px 1px color-mix(in srgb, var(--coral-red) 30%, transparent)`
+                backgroundColor: 'var(--coral-red)', // Coral red for expenses for good contrast
+                // boxShadow: `0 0 8px 1px color-mix(in srgb, var(--coral-red) 30%, transparent)` // Softer shadow
               }}
             >
             </div>

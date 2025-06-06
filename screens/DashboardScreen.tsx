@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../hooks/useAppContext'; 
 import { formatCurrency, getMonthName } from '../utils/formatters';
@@ -62,24 +63,25 @@ const DashboardScreen: React.FC = () => {
 
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-5"> {/* Adjusted spacing */}
       <MonthNavigator className="mb-3" />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <SummaryCard 
           title="Saldo em Conta" 
           value={formatCurrency(summary.accountBalance, currencySymbol)} 
-          icon={<DollarSignIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
-          gradientBg={COLORS.gradientBalance}
-          valueColor={settings?.theme === 'light' ? 'var(--primary-bg)' : 'var(--absolute-black)'} // Ensure high contrast on gradient
+          icon={<DollarSignIcon className="w-5 h-5" />} // Slightly smaller icon
+          useSolidBackground={true}
+          solidBgColor="var(--ref-blue-vibrant)"
+          solidTextColor="var(--ref-white)"
           subValue={`Saldo Inicial: ${formatCurrency(currentMonthData.openingBalance || 0, currencySymbol)}`}
         />
         <SummaryCard 
           title="Total Restante no Mês" 
           value={formatCurrency(summary.netSavings, currencySymbol)} 
-          icon={<DollarSignIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
-          valueColor={summary.netSavings >= 0 ? 'var(--emerald-lime)' : 'var(--coral-red)'}
-          borderColor={summary.netSavings >= 0 ? 'var(--emerald-lime)' : 'var(--coral-red)'}
+          icon={<DollarSignIcon className="w-5 h-5" />}
+          valueColor={summary.netSavings >= 0 ? 'var(--ref-blue-vibrant)' : 'var(--coral-red)'}
+          // borderColor prop no longer creates a side border, style is via card background/border
         />
       </div>
 
@@ -88,31 +90,29 @@ const DashboardScreen: React.FC = () => {
           onClick={openProventosModal}
           title="Total de Proventos" 
           value={formatCurrency(summary.totalIncome, currencySymbol)} 
-          icon={<TrendingUpIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />}
-          valueColor={'var(--emerald-lime)'}
-          borderColor={'var(--emerald-lime)'}
+          icon={<TrendingUpIcon className="w-5 h-5" />}
+          valueColor={'var(--ref-blue-vibrant)'} // Use vibrant blue for positive values
         />
         <SummaryCard 
           onClick={openDebitosModal}
           title="Total de Débitos" 
           value={formatCurrency(summary.totalExpenses, currencySymbol)} 
-          icon={<BarChart2Icon className="w-5 h-5 transform scale-y-[-1] group-hover:scale-[-1.1,1.1] transition-transform" />}
+          icon={<BarChart2Icon className="w-5 h-5 transform scale-y-[-1]" />}
           valueColor={'var(--coral-red)'}
-          borderColor={'var(--coral-red)'}
         />
          <SummaryCard 
           title="Gráfico Mensal"
           onClick={() => setIsMonthlyChartVisible(!isMonthlyChartVisible)}
           value="" 
           isActionCard={true} 
-          valueColor={'var(--electric-blue)'} 
-          borderColor={'var(--electric-blue)'} 
-          icon={<PieChartIcon className="w-8 h-8" />} 
+          solidBgColor="var(--ref-blue-vibrant)" // Blue background for action card
+          solidTextColor="var(--ref-white)"
+          icon={<PieChartIcon className="w-7 h-7" />} 
         />
       </div>
       
       {isMonthlyChartVisible && (
-        <div className="mt-5 space-y-6"> 
+        <div className="mt-5 space-y-5"> 
           <MonthlySummaryChart 
             summary={{ totalIncome: summary.totalIncome, totalExpenses: summary.totalExpenses }}
             currencySymbol={currencySymbol}
@@ -129,15 +129,13 @@ const DashboardScreen: React.FC = () => {
           <SummaryCard 
             title="Limite do Cartão" 
             value={formatCurrency(currentMonthData.creditCardLimit, currencySymbol)} 
-            valueColor={'var(--soft-magenta)'}
-            borderColor={'var(--soft-magenta)'}
+            valueColor={'var(--ref-yellow-soft)'} // Use yellow for this info
           />
           <SummaryCard 
             title="Limite Restante Cartão" 
             value={formatCurrency(summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit !== null ? summary.creditCardRemainingLimit : 0, currencySymbol)}
             subValue={`Gasto: ${formatCurrency(summary.creditCardSpent, currencySymbol)}`}
             valueColor={summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit !== null && summary.creditCardRemainingLimit >=0 ? 'var(--text-primary)' : 'var(--coral-red)'}
-            borderColor={summary.creditCardRemainingLimit !== undefined && summary.creditCardRemainingLimit !== null && summary.creditCardRemainingLimit >=0 ? 'var(--amethyst-purple)' : 'var(--coral-red)'}
           />
         </div>
       )}

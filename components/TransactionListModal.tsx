@@ -53,7 +53,7 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
       <div className="mt-6 text-right">
         <button
           onClick={onClose}
-          className={`py-2 px-5 bg-gradient-to-r from-${COLORS.petroleumBlue} to-${COLORS.deepPurple} text-white text-sm font-medium rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--emerald-lime)] transition-opacity shadow-md hover:shadow-lg`}
+          className={`py-2 px-5 bg-gradient-to-r from-[${COLORS.petroleumBlue}] to-[${COLORS.deepPurple}] text-white text-sm font-medium rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--emerald-lime)] transition-opacity shadow-md hover:shadow-lg`}
         >
           Fechar
         </button>

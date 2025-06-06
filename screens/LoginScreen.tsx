@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../hooks/useAppContext';
 import { APP_NAME, DollarSignIcon } from '../constants'; 
@@ -32,23 +33,23 @@ const LoginScreen: React.FC = () => {
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center p-4"
-      style={{ background: 'linear-gradient(160deg, var(--electric-blue), var(--primary-bg) 50%, var(--amethyst-purple))' }}
+      style={{ background: 'var(--primary-bg)' }} // Use new primary-bg for overall page
     >
       <div 
-        className="w-full max-w-md p-8 rounded-xl shadow-2xl"
+        className="w-full max-w-md p-8 rounded-[20px] shadow-xl" // More rounded, standard shadow
         style={{ backgroundColor: 'var(--secondary-bg)', border: '1px solid var(--card-border)' }}
       >
-        <div className="text-center mb-10">
-          <DollarSignIcon className="w-20 h-20 mx-auto mb-4 gradient-text" />
-          <h1 className="text-4xl font-bold" style={{color: 'var(--text-primary)'}}>{APP_NAME}</h1>
-          <p style={{color: 'var(--text-secondary)'}} className="text-sm mt-1">Seu controle financeiro pessoal.</p>
+        <div className="text-center mb-8"> {/* Adjusted margin */}
+          <DollarSignIcon className="w-16 h-16 mx-auto mb-3" style={{color: 'var(--ref-blue-vibrant)'}} /> {/* Blue icon */}
+          <h1 className="text-3xl font-bold" style={{color: 'var(--text-primary)'}}>{APP_NAME}</h1> {/* Poppins Bold */}
+          <p style={{color: 'var(--text-secondary)'}} className="text-sm mt-1 font-normal">Seu controle financeiro pessoal.</p> {/* Poppins Normal */}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-7">
+        <form onSubmit={handleSubmit} className="space-y-6"> {/* Adjusted spacing */}
           <div>
             <label 
               htmlFor="username" 
-              className="block text-xs font-semibold mb-1.5"
+              className="block text-xs font-medium mb-1.5" // Poppins Medium
               style={{color: 'var(--text-secondary)'}}
             >
               Usuário
@@ -60,7 +61,8 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
               disabled={isLoading} 
-              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-lg focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50" // Reverted placeholder variable
+              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-sm rounded-xl focus:border-[var(--input-focus-border)] focus:ring-1 focus:ring-[var(--input-focus-border)]/50 block p-3 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-60 font-normal" 
+              // Poppins Normal, more rounded
               placeholder="Nome de usuário"
             />
           </div>
@@ -68,7 +70,7 @@ const LoginScreen: React.FC = () => {
           <div>
             <label 
               htmlFor="password" 
-              className="block text-xs font-semibold mb-1.5"
+              className="block text-xs font-medium mb-1.5" // Poppins Medium
               style={{color: 'var(--text-secondary)'}}
             >
               Senha
@@ -80,7 +82,8 @@ const LoginScreen: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading} 
-              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-lg focus:border-[var(--input-focus-border)] focus:ring-2 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-50" // Reverted placeholder variable
+              className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-sm rounded-xl focus:border-[var(--input-focus-border)] focus:ring-1 focus:ring-[var(--input-focus-border)]/50 block p-3 transition-all duration-300 ease-in-out input-neon-focus disabled:opacity-60 font-normal"
+              // Poppins Normal, more rounded
               placeholder="Sua senha"
             />
           </div>
@@ -88,7 +91,7 @@ const LoginScreen: React.FC = () => {
           {localError && !isLoading && ( 
             <p 
               className="text-sm text-center p-2.5 rounded-lg"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--coral-red) 15%, transparent)', color: 'var(--coral-red)'}}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--coral-red) 10%, transparent)', color: 'var(--coral-red)'}} // Softer error bg
             >
               {localError}
             </p>
@@ -98,8 +101,8 @@ const LoginScreen: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading} 
-              className="w-full py-3.5 px-5 text-white font-semibold rounded-lg transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-[var(--amethyst-purple)]/50 shadow-lg hover:shadow-xl button-gradient-hover disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
-              style={{ background: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple))', backgroundSize: '200% auto' }}
+              className="w-full ref-button-primary py-3 text-base disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg"
+              // Using new ref-button-primary class
             >
               {isLoading ? (
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -112,7 +115,7 @@ const LoginScreen: React.FC = () => {
         </form>
       </div>
        <footer className="absolute bottom-5 text-center w-full">
-        <p className="text-xs" style={{color: 'color-mix(in srgb, var(--text-secondary) 50%, transparent)'}}>
+        <p className="text-xs font-normal" style={{color: 'color-mix(in srgb, var(--text-secondary) 70%, transparent)'}}> {/* Poppins Normal */}
           &copy; {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.
         </p>
       </footer>
