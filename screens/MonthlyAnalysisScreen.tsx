@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { useAppContext } from '../hooks/useAppContext.js';
 import { getMonthName, formatCurrency } from '../utils/formatters.js';
 import MonthNavigator from '../components/MonthNavigator.js';
 import SummaryCard from '../components/SummaryCard.js';
 import { TargetIcon, TrendingUpIcon, TrendingDownIcon, COLORS, AlertTriangleIcon } from '../constants.js';
-import { EXPENSE_CATEGORIES } from '../types.js';
+// DEFAULT_EXPENSE_CATEGORIES is no longer needed here as getCategorySpendingDetails handles combined list.
 
 const MonthlyAnalysisScreen: React.FC = () => {
   const { 
@@ -12,13 +13,13 @@ const MonthlyAnalysisScreen: React.FC = () => {
     settings, 
     getMonthlySummary, 
     getCurrentMonthData,
-    getCategorySpendingDetails 
+    getCategorySpendingDetails // This function is now responsible for handling combined categories
   } = useAppContext();
 
   const currencySymbol = settings?.currencySymbol || 'R$';
   const currentMonthData = getCurrentMonthData();
   const monthlySummary = getMonthlySummary(activeMonthYear);
-  const categorySpendingDetails = getCategorySpendingDetails(activeMonthYear);
+  const categorySpendingDetails = getCategorySpendingDetails(activeMonthYear); // Relies on context to provide correct details
 
   const overallMonthlyGoal = currentMonthData?.monthlyOverallSpendingGoal || 0;
   const totalMonthlyExpenses = monthlySummary.totalExpenses;
@@ -26,12 +27,12 @@ const MonthlyAnalysisScreen: React.FC = () => {
 
   const getProgressBarColor = (percentage: number): string => {
     if (percentage > 100) return COLORS.coralRed; // Over budget
-    if (percentage > 80) return COLORS.softMagenta; // Nearing budget (original mockup yellow was a bit hard to see)
+    if (percentage > 80) return COLORS.softMagenta; 
     return COLORS.emeraldLime; // Within budget
   };
   const getPercentageTextColor = (percentage: number): string => {
     if (percentage > 100) return `text-${COLORS.expenseTailwind}`;
-    if (percentage > 80) return `text-yellow-400`; // Using Tailwind yellow
+    if (percentage > 80) return `text-yellow-400`; 
     return `text-${COLORS.incomeTailwind}`;
   };
 
@@ -116,7 +117,7 @@ const MonthlyAnalysisScreen: React.FC = () => {
                   <div 
                     className="h-3.5 rounded-full transition-all duration-500 ease-out"
                     style={{ 
-                      width: `${Math.min(detail.percentage, 100)}%`, // Cap bar at 100% width visually even if overspent
+                      width: `${Math.min(detail.percentage, 100)}%`, 
                       backgroundColor: getProgressBarColor(detail.percentage) 
                     }}
                   ></div>
@@ -130,7 +131,7 @@ const MonthlyAnalysisScreen: React.FC = () => {
           </div>
         ) : (
           <p className="text-center py-4" style={{color: 'var(--text-secondary)'}}>
-            Nenhuma meta de categoria definida ou nenhum gasto registrado este mês. Defina metas na tela de Ajustes.
+            Nenhuma meta de categoria definida ou nenhum gasto registrado este mês.
           </p>
         )}
       </div>

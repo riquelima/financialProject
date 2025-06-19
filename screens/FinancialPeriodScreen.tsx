@@ -1,15 +1,15 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../hooks/useAppContext.js';
 import { PeriodType, Transaction, TransactionType } from '../types.js';
 import AddTransactionModal from '../components/AddTransactionModal.js';
+import EditPeriodGoalsModal from '../components/EditPeriodGoalsModal.js'; // Import new modal
 import FloatingActionButton from '../components/FloatingActionButton.js';
 import MonthNavigator from '../components/MonthNavigator.js';
 import { formatCurrency } from '../utils/formatters.js';
 import { PlusIcon, COLORS, CalendarIcon, TrendingUpIcon, TrendingDownIcon, DollarSignIcon, TargetIcon } from '../constants.js';
 
 interface FinancialPeriodScreenProps {
-  // initialPeriodType is used to set the default tab when the screen loads
-  // but the screen will manage its own internal displayedPeriodType
   periodType: PeriodType; 
 }
 
@@ -19,31 +19,50 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
     settings, 
     getPeriodSummary,
     getCurrentMonthData,
+    updateMonthData // Added for updating goals
   } = useAppContext();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
+  const [isEditGoalsModalOpen, setIsEditGoalsModalOpen] = useState(false); // State for new modal
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [displayedPeriodType, setDisplayedPeriodType] = useState<PeriodType>(initialPeriodType);
 
-  // Update displayedPeriodType if the initial prop changes (e.g., due to main navigation)
   useEffect(() => {
     setDisplayedPeriodType(initialPeriodType);
   }, [initialPeriodType]);
 
-
   const currencySymbol = settings?.currencySymbol || 'R$';
   const currentMonthData = getCurrentMonthData();
   
-  // Use displayedPeriodType for calculations
   const periodSummary = useMemo(() => getPeriodSummary(activeMonthYear, displayedPeriodType), [activeMonthYear, displayedPeriodType, getPeriodSummary]);
-
 
   const screenTitle = "Controle Quinzenal";
   const screenSubtitle = "Acompanhe suas finanças por período";
 
   const handleAddTransaction = () => {
     setTransactionToEdit(null); 
-    setIsModalOpen(true);
+    setIsAddTransactionModalOpen(true);
+  };
+
+  const handleOpenEditGoalsModal = () => {
+    setIsEditGoalsModalOpen(true);
+  };
+
+  const handleSavePeriodGoals = (goals: { spendingGoal: number; savingsGoal: number }) => {
+    if (!currentMonthData) return;
+
+    if (displayedPeriodType === PeriodType.MID_MONTH) {
+      updateMonthData(activeMonthYear, {
+        midMonthSpendingGoal: goals.spendingGoal,
+        midMonthSavingsGoal: goals.savingsGoal,
+      });
+    } else {
+      updateMonthData(activeMonthYear, {
+        endOfMonthSpendingGoal: goals.spendingGoal,
+        endOfMonthSavingsGoal: goals.savingsGoal,
+      });
+    }
+    setIsEditGoalsModalOpen(false);
   };
   
   const currentSpendingGoal = displayedPeriodType === PeriodType.MID_MONTH 
@@ -65,7 +84,6 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
   const activeTabStyle = "text-white shadow-md"; 
   const inactiveTabStyle = "text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--tertiary-bg)] hover:bg-opacity-70";
 
-
   return (
     <div className="p-4 space-y-5">
       <header className="text-center mb-1">
@@ -75,7 +93,6 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
       
       <MonthNavigator />
 
-      {/* Quinzena Tabs */}
       <div className="flex space-x-1 sm:space-x-2 p-1 rounded-lg" style={{backgroundColor: 'var(--primary-bg)'}}>
         <button 
           onClick={() => setDisplayedPeriodType(PeriodType.MID_MONTH)}
@@ -97,7 +114,6 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
         </button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-4 rounded-lg shadow-md glassmorphism-card flex items-center space-x-3">
           <TrendingUpIcon className="w-8 h-8 p-1.5 rounded-full bg-emerald-500/20 text-emerald-400" />
@@ -126,14 +142,20 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
         </p>
       </div>
 
-      {/* Metas do Período */}
-      <div className="p-5 rounded-lg shadow-md glassmorphism-card">
+      {/* Metas do Período - Card is now clickable */}
+      <div 
+        className="p-5 rounded-lg shadow-md glassmorphism-card cursor-pointer hover:shadow-xl transition-shadow duration-300"
+        onClick={handleOpenEditGoalsModal}
+        role="button"
+        tabIndex={0}
+        aria-label="Editar metas do período"
+        onKeyDown={(e) => e.key === 'Enter' && handleOpenEditGoalsModal()}
+      >
         <div className="flex items-center mb-4">
             <TargetIcon className="w-6 h-6 mr-2" style={{color: 'var(--text-accent)'}}/>
             <h2 className="text-lg font-semibold" style={{color: 'var(--text-primary)'}}>Metas do Período</h2>
         </div>
         
-        {/* Meta de Gastos */}
         <div className="mb-5">
           <div className="flex justify-between items-baseline mb-1">
             <p className="text-sm font-medium" style={{color: 'var(--text-secondary)'}}>Meta de Gastos</p>
@@ -153,7 +175,6 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
           </div>
         </div>
 
-        {/* Meta de Economia */}
         <div>
           <p className="text-sm font-medium mb-1" style={{color: 'var(--text-secondary)'}}>Meta de Economia</p>
           <div className="flex justify-between items-baseline p-3 rounded-md" style={{backgroundColor: 'var(--tertiary-bg)'}}>
@@ -185,10 +206,20 @@ const FinancialPeriodScreen: React.FC<FinancialPeriodScreenProps> = ({ periodTyp
       />
 
       <AddTransactionModal 
-        isOpen={isModalOpen} 
-        onClose={() => { setIsModalOpen(false); setTransactionToEdit(null); }}
-        periodType={displayedPeriodType} // Pass the dynamic displayedPeriodType
+        isOpen={isAddTransactionModalOpen} 
+        onClose={() => { setIsAddTransactionModalOpen(false); setTransactionToEdit(null); }}
+        periodType={displayedPeriodType}
         transactionToEdit={transactionToEdit}
+      />
+
+      <EditPeriodGoalsModal
+        isOpen={isEditGoalsModalOpen}
+        onClose={() => setIsEditGoalsModalOpen(false)}
+        periodType={displayedPeriodType}
+        currentSpendingGoal={currentSpendingGoal || 0}
+        currentSavingsGoal={currentSavingsGoal || 0}
+        onSave={handleSavePeriodGoals}
+        currencySymbol={currencySymbol}
       />
     </div>
   );

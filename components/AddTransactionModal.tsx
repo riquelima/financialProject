@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal.js';
 import { useAppContext } from '../hooks/useAppContext.js'; 
-import { Transaction, TransactionType, PeriodType, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types.js';
+import { Transaction, TransactionType, PeriodType } from '../types.js';
 import CategorySelect from './CategorySelect.js';
 import { formatDate } from '../utils/formatters.js';
 
@@ -15,13 +15,21 @@ interface AddTransactionModalProps {
 }
 
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClose, periodType, transactionToEdit }) => {
-  const { activeMonthYear, addTransaction, updateTransaction, settings } = useAppContext();
+  const { 
+    activeMonthYear, 
+    addTransaction, 
+    updateTransaction, 
+    settings,
+    getCombinedIncomeCategories, // New context function
+    getCombinedExpenseCategories // New context function
+  } = useAppContext();
   
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [transactionType, setTransactionType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isRecurring, setIsRecurring] = useState(false);
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -30,12 +38,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
       setCategory(transactionToEdit.category);
       setTransactionType(transactionToEdit.type);
       setDate(transactionToEdit.date);
+      setIsRecurring(transactionToEdit.isRecurring || false); 
     } else {
       setDescription('');
       setAmount('');
       setCategory('');
       setTransactionType(TransactionType.EXPENSE); 
       setDate(new Date().toISOString().split('T')[0]);
+      setIsRecurring(false); 
     }
   }, [transactionToEdit, isOpen]);
 
@@ -53,7 +63,8 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
         category, 
         type: transactionType, 
         date,
-        period_type: periodType 
+        period_type: periodType,
+        isRecurring: isRecurring, 
     };
 
     if (transactionToEdit) {
@@ -70,8 +81,19 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
     onClose();
   };
 
-  const categories = transactionType === TransactionType.INCOME ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const currentCategories = useMemo(() => {
+    return transactionType === TransactionType.INCOME 
+      ? getCombinedIncomeCategories() 
+      : getCombinedExpenseCategories();
+  }, [transactionType, getCombinedIncomeCategories, getCombinedExpenseCategories]);
   
+  // Ensure category is reset if it's not in the new list of categories when type changes
+  useEffect(() => {
+    if (category && !currentCategories.includes(category)) {
+      setCategory('');
+    }
+  }, [currentCategories, category]);
+
   const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-[10px] focus:border-[var(--input-focus-border)] focus:ring-1 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus";
   const labelBaseClasses = "block text-xs font-semibold mb-1.5 text-[var(--text-secondary)]";
 
@@ -135,7 +157,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
           <label htmlFor="category" className={labelBaseClasses}>Categoria</label>
           <CategorySelect
             id="category"
-            categories={categories}
+            categories={currentCategories}
             selectedValue={category}
             onChange={setCategory}
             placeholder="Selecione uma categoria"
@@ -153,6 +175,20 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
             className={`${inputBaseClasses} dark-date-picker`}
           />
         </div>
+
+        <div>
+          <label htmlFor="isRecurring" className="flex items-center space-x-2 cursor-pointer mt-1">
+            <input
+              type="checkbox"
+              id="isRecurring"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              className="form-checkbox h-4 w-4 rounded text-[var(--emerald-lime)] bg-[var(--input-bg)] border-[var(--input-border)] focus:ring-[var(--emerald-lime)] focus:ring-offset-0 shadow-sm"
+            />
+            <span className={`${labelBaseClasses} mb-0`}>Marcar como Recorrente</span>
+          </label>
+        </div>
+
 
         <div className="flex justify-end space-x-3 pt-3">
           <button 

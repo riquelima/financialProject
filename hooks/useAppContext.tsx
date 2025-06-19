@@ -1,9 +1,8 @@
 
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, BENEFIT_CATEGORIES, EXPENSE_CATEGORIES, CategorySpendingDetail } from '../types.js';
-import { getCurrentMonthYear } from '../utils/formatters.js'; 
+import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, UserCategory, BENEFIT_CATEGORIES, DEFAULT_INCOME_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES, CategorySpendingDetail } from '../types.js';
+import { getCurrentMonthYear, addMonths as addMonthsUtil } from '../utils/formatters.js'; 
 
 // Supabase Client Initialization
 const YOUR_SUPABASE_URL_HERE: string = 'https://kwvqumyzkezzatuhqoda.supabase.co'; 
@@ -70,11 +69,27 @@ const defaultInitialAppState: AppState = {
   isAuthenticated: false,
   currentUser: null, 
   currentUsername: null, 
+  userCategories: [], // Initialize userCategories
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const SUPABASE_CONFIG_ERROR_MESSAGE = "Supabase não está configurado. Por favor, verifique se as credenciais (URL e Chave Anon) estão corretas no arquivo 'hooks/useAppContext.tsx'.";
+
+// Helper function to calculate date for recurring transaction in a new month
+const getRecurringDateForNewMonth = (originalDateString: string, newMonthYear: string): string => {
+    const [_originalYear, _originalMonth, originalDayOfMonthStr] = originalDateString.split('-');
+    const originalDayOfMonth = parseInt(originalDayOfMonthStr, 10);
+    const [newYearStr, newMonthStr] = newMonthYear.split('-');
+    const newYear = parseInt(newYearStr, 10);
+    const newMonthJs = parseInt(newMonthStr, 10) - 1; // JavaScript months are 0-indexed
+
+    let targetDate = new Date(Date.UTC(newYear, newMonthJs, originalDayOfMonth));
+    if (targetDate.getUTCMonth() !== newMonthJs) {
+        targetDate = new Date(Date.UTC(newYear, newMonthJs + 1, 0)); 
+    }
+    return targetDate.toISOString().split('T')[0];
+};
 
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -82,6 +97,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState(true); 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [isPropagatingRecurring, setIsPropagatingRecurring] = useState(false);
 
   const clearError = () => setError('');
 
@@ -141,8 +157,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!rawSettings) return null;
     return {
       user_id: rawSettings.user_id,
-      currencySymbol: rawSettings.currencysymbol, // Supabase column name is lowercase
-      userNameDisplay: rawSettings.usernamedisplay, // Supabase column name is lowercase
+      currencySymbol: rawSettings.currencysymbol, 
+      userNameDisplay: rawSettings.usernamedisplay, 
       theme: rawSettings.theme,
     } as AppSettings;
   };
@@ -159,10 +175,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     let settingsData: AppSettings | null = null;
     let activeMonthYearToSet = getCurrentMonthYear();
+    let fetchedUserCategories: UserCategory[] = [];
 
     try {
       // 1. Fetch/Create Settings
-      let { data: fetchedRawSettings, error: settingsQueryError } = await supabase
+       let { data: fetchedRawSettings, error: settingsQueryError } = await supabase
         .from('financas_settings')
         .select('user_id, currencysymbol, usernamedisplay, theme') 
         .eq('user_id', userId)
@@ -176,8 +193,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
          try {
           const defaultSettingsPayload = { 
             user_id: userId, 
-            currencysymbol: 'R$', // Use lowercase for Supabase column
-            usernamedisplay: username, // Use lowercase for Supabase column
+            currencysymbol: 'R$', 
+            usernamedisplay: username, 
             theme: 'dark',
           };
           const { data: newRawSettings, error: insertSettingsError } = await supabase
@@ -186,8 +203,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (insertSettingsError) throw insertSettingsError;
           settingsData = mapRawSettingsToAppSettings(newRawSettings);
         } catch (insertError: any) {
-          // Non-23505 unique violation code indicates other issues.
-          // For 23505, it means the record was likely created between the check and the insert (race condition).
           if (insertError.code === '23505') { 
             console.warn("Supabase insert default settings error (23505): Tentando re-buscar os dados.");
             const { data: refetchedRawSettings, error: refetchError } = await supabase
@@ -227,21 +242,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
          }
       }
 
-      // 3. Fetch all MonthData entries for the user
+      // 3. Fetch User Categories & Seed if necessary
+      let { data: userCategoriesData, error: categoriesError } = await supabase
+        .from('financas_user_categories')
+        .select('*')
+        .eq('user_id', userId);
+      if (categoriesError) throw categoriesError;
+      
+      fetchedUserCategories = userCategoriesData || [];
+
+      if (fetchedUserCategories.length === 0) {
+        // Seed default categories for the user
+        const initialCategoriesToSeed: Omit<UserCategory, 'id' | 'created_at'>[] = [];
+        DEFAULT_INCOME_CATEGORIES.forEach(name => initialCategoriesToSeed.push({ user_id: userId, name, type: TransactionType.INCOME }));
+        DEFAULT_EXPENSE_CATEGORIES.forEach(name => initialCategoriesToSeed.push({ user_id: userId, name, type: TransactionType.EXPENSE }));
+
+        if (initialCategoriesToSeed.length > 0) {
+          const { data: seededCategories, error: seedError } = await supabase
+            .from('financas_user_categories')
+            .insert(initialCategoriesToSeed)
+            .select();
+          
+          if (seedError) {
+            console.error("Falha ao semear categorias padrão:", seedError);
+            // Decide if this is a critical error or if the app can proceed without seeded categories
+          } else if (seededCategories) {
+            fetchedUserCategories = seededCategories;
+          }
+        }
+      }
+
+
+      // 4. Fetch all MonthData entries for the user
       const { data: userMonthsData, error: monthsError } = await supabase
         .from('financas_months_data').select('*').eq('user_id', userId);
       if (monthsError) throw monthsError;
 
-      // 4. Fetch all Transactions for the user
+      // 5. Fetch all Transactions for the user
       const { data: userTransactions, error: transactionsError } = await supabase
-        .from('financas_transactions').select('*').eq('user_id', userId).order('date', { ascending: false }); 
+        .from('financas_transactions').select('*, is_recurring').eq('user_id', userId).order('date', { ascending: false }); 
       if (transactionsError) throw transactionsError;
 
-      // 5. Reconstruct AppState.data
+      // 6. Reconstruct AppState.data
       const reconstructedData: Record<string, MonthData> = {};
       if (userMonthsData) {
         for (const mData of userMonthsData) {
-          const monthTransactions = userTransactions?.filter(t => t.month_data_id === mData.id) || [];
+          const monthTransactions = userTransactions?.filter(t => t.month_data_id === mData.id).map(t => ({
+            ...t,
+            isRecurring: t.is_recurring 
+          })) || [];
           reconstructedData[mData.month_year] = {
             id: mData.id,
             monthYear: mData.month_year,
@@ -271,6 +320,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         settings: settingsData || defaultAppSettings, 
         activeMonthYear: activeMonthYearToSet,
         data: reconstructedData,
+        userCategories: fetchedUserCategories,
       });
 
     } catch (err: any) {
@@ -286,7 +336,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setError(finalUiMessage);
       setAppState(prevState => ({ 
         ...defaultInitialAppState, isAuthenticated: true, currentUser: userId, currentUsername: username,
-        settings: defaultAppSettings, data: { [getCurrentMonthYear()]: createEmptyMonthDataStructure(getCurrentMonthYear(),userId) }
+        settings: defaultAppSettings, data: { [getCurrentMonthYear()]: createEmptyMonthDataStructure(getCurrentMonthYear(),userId) },
+        userCategories: [], 
       }));
     } finally {
       setIsLoading(false); 
@@ -294,6 +345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [getOrCreateSupabaseMonthRecord, isSupabaseConfigured]);
 
   useEffect(() => {
+    // Initial auth check from localStorage
     if (!isSupabaseConfigured) {
       setError(SUPABASE_CONFIG_ERROR_MESSAGE);
       setAppState(prev => ({...prev, isAuthenticated: false}));
@@ -322,13 +374,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []); 
 
    useEffect(() => {
+    // Load user data if authenticated but data is missing
     if (!isSupabaseConfigured) { setIsLoading(false); return; }
     if (appState.isAuthenticated && appState.currentUser && appState.currentUsername) {
-      if (!appState.data || Object.keys(appState.data).length === 0 || !appState.settings) {
+       // Check if essential parts of data are missing, implying a need to load.
+       // User categories are now critical as they are seeded.
+      if (!appState.data || Object.keys(appState.data).length === 0 || !appState.settings || appState.userCategories.length === 0 ) {
         loadAllUserDataForUser(appState.currentUser, appState.currentUsername);
       } else { setIsLoading(false); }
     } else if (!appState.isAuthenticated) { setIsLoading(false); }
-  }, [appState.isAuthenticated, appState.currentUser, appState.currentUsername, appState.data, appState.settings, loadAllUserDataForUser, isSupabaseConfigured]);
+  }, [appState.isAuthenticated, appState.currentUser, appState.currentUsername, appState.data, appState.settings, appState.userCategories, loadAllUserDataForUser, isSupabaseConfigured]);
+
 
   const login = useCallback(async (usernameInput: string, passwordInput: string): Promise<boolean> => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsLoading(false); return false; }
@@ -342,12 +398,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsLoading(false); return false;
       }
       if (!userData) { setError('Usuário não encontrado ou senha inválida.'); setIsLoading(false); return false; }
-      if (userData.password_hash === password) {
+      if (userData.password_hash === password) { // IMPORTANT: In a real app, use hashed passwords & secure comparison
         const expiryTime = Date.now() + SESSION_DURATION;
         localStorage.setItem(LOCAL_STORAGE_USER_ID, userData.id);
         localStorage.setItem(LOCAL_STORAGE_USERNAME, userData.username); 
         localStorage.setItem(LOCAL_STORAGE_SESSION_EXPIRY, expiryTime.toString());
         setAppState(prevState => ({ ...defaultInitialAppState, isAuthenticated: true, currentUser: userData.id, currentUsername: userData.username }));
+        // loadAllUserDataForUser will be triggered by useEffect
         return true;
       } else { setError('Usuário não encontrado ou senha inválida.'); setIsLoading(false); return false; }
     } catch (err: any) {
@@ -369,7 +426,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTransaction = useCallback(async (
     monthYear: string, 
     periodTypeForTagging: PeriodType,
-    transactionData: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at' | 'period_type'> & { period_type?: PeriodType }
+    transactionData: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at' | 'period_type'> & { period_type?: PeriodType, isRecurring?: boolean }
   ) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
     if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
@@ -378,20 +435,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const monthDataId = await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear);
       
       const transactionToInsert = {
-        ...transactionData,
+        description: transactionData.description,
+        amount: transactionData.amount,
+        category: transactionData.category,
+        date: transactionData.date,
+        type: transactionData.type,
         month_data_id: monthDataId,
         user_id: appState.currentUser,
         period_type: transactionData.period_type || periodTypeForTagging, 
+        is_recurring: transactionData.isRecurring || false, 
       };
 
-      const { data: newTransaction, error } = await supabase
-        .from('financas_transactions').insert(transactionToInsert).select().single();
+      const { data: newTransactionFromDb, error } = await supabase
+        .from('financas_transactions').insert(transactionToInsert).select('*, is_recurring').single();
 
-      if (error || !newTransaction) throw error || new Error("Falha ao adicionar transação no Supabase.");
+      if (error || !newTransactionFromDb) throw error || new Error("Falha ao adicionar transação no Supabase.");
+      
+      const newTransactionForState: Transaction = {
+          ...newTransactionFromDb,
+          isRecurring: newTransactionFromDb.is_recurring 
+      };
+
 
       setAppState(prevState => {
         const MData = getOrCreateLocalMonthData(monthYear, prevState.data, appState.currentUser!);
-        const updatedTransactions = [...MData.transactions, newTransaction as Transaction]
+        const updatedTransactions = [...MData.transactions, newTransactionForState]
             .sort((a,b) => new Date(b.date + "T00:00:00").getTime() - new Date(a.date + "T00:00:00").getTime());
         
         const updatedMonthObject: MonthData = {
@@ -434,26 +502,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [appState.currentUser, isSupabaseConfigured]);
 
-  const updateTransaction = useCallback(async (updatedTransactionData: Transaction) => {
+  const updateTransaction = useCallback(async (transaction: Transaction) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
     if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
     setIsSaving(true); clearError();
+
+    const { 
+      id, // Keep id separate
+      month_data_id, // Exclude
+      user_id,       // Exclude
+      created_at,    // Exclude
+      updated_at,    // Exclude
+      ...dataToUpdate // Rest of the properties
+    } = transaction;
+
+    const updatePayload = {
+      description: dataToUpdate.description,
+      amount: dataToUpdate.amount,
+      category: dataToUpdate.category,
+      date: dataToUpdate.date,
+      type: dataToUpdate.type,
+      period_type: dataToUpdate.period_type,
+      is_recurring: dataToUpdate.isRecurring || false,
+    };
+    
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, month_data_id, user_id, created_at, updated_at, ...updatePayload } = updatedTransactionData;
-      
-      const { data: newTransaction, error } = await supabase
+      const { data: updatedTransactionFromDb, error } = await supabase
         .from('financas_transactions').update(updatePayload).eq('id', id)
-        .eq('user_id', appState.currentUser).select().single();
-      if (error || !newTransaction) throw error || new Error("Falha ao atualizar transação no Supabase.");
+        .eq('user_id', appState.currentUser).select('*, is_recurring').single();
+      if (error || !updatedTransactionFromDb) throw error || new Error("Falha ao atualizar transação no Supabase.");
+
+      const updatedTransactionForState: Transaction = {
+          ...updatedTransactionFromDb,
+          isRecurring: updatedTransactionFromDb.is_recurring 
+      };
       
       setAppState(prevState => {
         const newData = { ...prevState.data };
         for (const monthYearKey in newData) {
           const currentMonthEntry = newData[monthYearKey];
-          const index = currentMonthEntry.transactions.findIndex(t => t.id === newTransaction.id);
+          const index = currentMonthEntry.transactions.findIndex(t => t.id === updatedTransactionForState.id);
           if (index !== -1) {
-            currentMonthEntry.transactions[index] = newTransaction as Transaction;
+            currentMonthEntry.transactions[index] = updatedTransactionForState;
             currentMonthEntry.transactions.sort((a,b) => new Date(b.date + "T00:00:00").getTime() - new Date(a.date + "T00:00:00").getTime());
             break; 
           }
@@ -473,8 +563,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsSaving(true); clearError();
     try {
       const payload = { 
-        currencysymbol: newSettings.currencySymbol ?? appState.settings.currencySymbol, // use lowercase for Supabase
-        usernamedisplay: newSettings.userNameDisplay ?? appState.settings.userNameDisplay, // use lowercase for Supabase
+        currencysymbol: newSettings.currencySymbol ?? appState.settings.currencySymbol, 
+        usernamedisplay: newSettings.userNameDisplay ?? appState.settings.userNameDisplay, 
         theme: newSettings.theme ?? appState.settings.theme,
       };
       const { data: updatedRawSettings, error } = await supabase
@@ -492,7 +582,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [appState.currentUser, appState.settings, isSupabaseConfigured]); 
 
   const updateMonthData = useCallback(async (monthYear: string, dataToUpdate: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit' | 'midMonthSpendingGoal' | 'midMonthSavingsGoal' | 'endOfMonthSpendingGoal' | 'endOfMonthSavingsGoal' | 'monthlyOverallSpendingGoal' | 'categorySpendingGoals'>>) => {
-    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
     if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
     setIsSaving(true); clearError();
     try {
@@ -506,7 +596,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dataToUpdate.endOfMonthSavingsGoal !== undefined) dbPayload.end_of_month_savings_goal = dataToUpdate.endOfMonthSavingsGoal;
       if (dataToUpdate.monthlyOverallSpendingGoal !== undefined) dbPayload.monthly_overall_spending_goal = dataToUpdate.monthlyOverallSpendingGoal;
       if (dataToUpdate.categorySpendingGoals !== undefined) dbPayload.category_spending_goals = dataToUpdate.categorySpendingGoals;
-
 
       if (Object.keys(dbPayload).length === 0) { setIsSaving(false); return; }
       
@@ -527,42 +616,127 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [appState.currentUser, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]); 
   
   const setActiveMonthYear = useCallback(async (monthYear: string) => {
-    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
-    if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
-    
-    setAppState(prevState => {
-      let updatedData = { ...prevState.data };
-      if (!updatedData[monthYear] && prevState.currentUser) { 
-        updatedData[monthYear] = createEmptyMonthDataStructure(monthYear, prevState.currentUser);
-      }
-      return { ...prevState, activeMonthYear: monthYear, data: updatedData };
-    });
-
-    setIsSaving(true); clearError();
-    try {
-      let { data: existingActiveMonth } = await supabase
-        .from('financas_active_months').select('user_id').eq('user_id', appState.currentUser).maybeSingle();
-      if (existingActiveMonth) {
-        const { error: updateError } = await supabase
-          .from('financas_active_months').update({ active_month_year: monthYear }).eq('user_id', appState.currentUser);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from('financas_active_months').insert({ user_id: appState.currentUser, active_month_year: monthYear });
-        if (insertError) throw insertError;
-      }
-      if (!appState.data[monthYear]?.id && appState.currentUser) {
-         await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear); 
-      }
-    } catch (err:any) {
-        setError(`Falha ao definir mês ativo no servidor: ${err.message}`);
-    } finally {
-      setIsSaving(false);
+    if (!supabase || !isSupabaseConfigured || !appState.currentUser) {
+        setError(SUPABASE_CONFIG_ERROR_MESSAGE);
+        setIsSaving(false);
+        return;
     }
-  }, [appState.currentUser, appState.data, getOrCreateSupabaseMonthRecord, isSupabaseConfigured]); 
+
+    setIsSaving(true); 
+    clearError();
+
+    setAppState(prevState => {
+        let updatedData = { ...prevState.data };
+        if (!updatedData[monthYear] && prevState.currentUser) {
+            updatedData[monthYear] = createEmptyMonthDataStructure(monthYear, prevState.currentUser);
+        }
+        return { ...prevState, activeMonthYear: monthYear, data: updatedData };
+    });
+    
+    try {
+        const { data: existingActiveMonth } = await supabase
+            .from('financas_active_months').select('user_id').eq('user_id', appState.currentUser).maybeSingle();
+        if (existingActiveMonth) {
+            const { error: updateError } = await supabase
+                .from('financas_active_months').update({ active_month_year: monthYear }).eq('user_id', appState.currentUser);
+            if (updateError) throw updateError;
+        } else {
+            const { error: insertError } = await supabase
+                .from('financas_active_months').insert({ user_id: appState.currentUser, active_month_year: monthYear });
+            if (insertError) throw insertError;
+        }
+
+        const targetMonthId = await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear);
+        
+        setIsPropagatingRecurring(true);
+        const previousMonthYear = addMonthsUtil(monthYear, -1);
+        const previousMonthData = appState.data[previousMonthYear];
+
+        let newPropagatedTransactions: Transaction[] = [];
+
+        if (previousMonthData && previousMonthData.transactions && previousMonthData.transactions.length > 0) {
+            const recurringSourceTransactions = previousMonthData.transactions.filter(t => t.isRecurring);
+            const targetMonthCurrentTransactions = appState.data[monthYear]?.transactions || [];
+
+            for (const sourceTx of recurringSourceTransactions) {
+                const newDate = getRecurringDateForNewMonth(sourceTx.date, monthYear);
+                const originalDayOfSource = parseInt(sourceTx.date.split('-')[2], 10);
+
+                const isDuplicate = targetMonthCurrentTransactions.some(existingTx => 
+                    existingTx.isRecurring &&
+                    parseInt(existingTx.date.split('-')[2],10) === parseInt(newDate.split('-')[2],10) && 
+                    (parseInt(getRecurringDateForNewMonth(existingTx.date, previousMonthYear).split('-')[2],10) === originalDayOfSource ||
+                     (existingTx.description === sourceTx.description && 
+                      existingTx.amount === sourceTx.amount &&
+                      existingTx.type === sourceTx.type &&
+                      existingTx.category === sourceTx.category
+                     )
+                    ) &&
+                    existingTx.description === sourceTx.description &&
+                    existingTx.amount === sourceTx.amount &&
+                    existingTx.type === sourceTx.type &&
+                    existingTx.category === sourceTx.category
+                );
+
+
+                if (!isDuplicate) {
+                    const dayOfNewDate = parseInt(newDate.split('-')[2], 10);
+                    const newPeriodType = dayOfNewDate <= 15 ? PeriodType.MID_MONTH : PeriodType.END_OF_MONTH;
+                    
+                    const transactionToInsertForRecurring = {
+                        description: sourceTx.description,
+                        amount: sourceTx.amount,
+                        category: sourceTx.category,
+                        date: newDate,
+                        type: sourceTx.type,
+                        month_data_id: targetMonthId,
+                        user_id: appState.currentUser,
+                        period_type: newPeriodType,
+                        is_recurring: true,
+                    };
+                    const { data: dbNewRecurringTx, error: recurringInsertError } = await supabase
+                        .from('financas_transactions').insert(transactionToInsertForRecurring)
+                        .select('*, is_recurring').single();
+                    
+                    if (recurringInsertError) {
+                        console.warn(`Falha ao propagar transação recorrente "${sourceTx.description}": ${recurringInsertError.message}`);
+                        continue; 
+                    }
+                    if (dbNewRecurringTx) {
+                        newPropagatedTransactions.push({ ...dbNewRecurringTx, isRecurring: dbNewRecurringTx.is_recurring });
+                    }
+                }
+            }
+        }
+        
+        if (newPropagatedTransactions.length > 0 || !appState.data[monthYear]?.id) {
+             setAppState(prevState => {
+                const MData = getOrCreateLocalMonthData(monthYear, prevState.data, appState.currentUser!);
+                const existingTransactions = MData.transactions.filter(
+                    et => !newPropagatedTransactions.some(npt => npt.description === et.description && npt.amount === et.amount && npt.type === et.type)
+                );
+
+                const finalTransactions = [...existingTransactions, ...newPropagatedTransactions]
+                    .sort((a,b) => new Date(b.date + "T00:00:00").getTime() - new Date(a.date + "T00:00:00").getTime());
+                
+                const updatedMonthObject: MonthData = {
+                  ...MData,
+                  id: MData.id || targetMonthId, 
+                  transactions: finalTransactions
+                };
+                return { ...prevState, data: { ...prevState.data, [monthYear]: updatedMonthObject } };
+            });
+        }
+    } catch (err: any) {
+        setError(`Falha ao definir mês ativo ou propagar recorrentes: ${err.message}`);
+    } finally {
+        setIsSaving(false);
+        setIsPropagatingRecurring(false);
+    }
+  }, [appState.currentUser, appState.data, getOrCreateSupabaseMonthRecord, getOrCreateLocalMonthData, isSupabaseConfigured]);
 
   const getCurrentMonthData = useCallback((): MonthData | null => {
-    if (!appState.activeMonthYear || !appState.data[appState.activeMonthYear]) {
+     if (!appState.activeMonthYear || !appState.data[appState.activeMonthYear]) {
        if (appState.currentUser && appState.activeMonthYear) {
         return createEmptyMonthDataStructure(appState.activeMonthYear, appState.currentUser);
       }
@@ -580,7 +754,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn('Invalid date format for transaction:', t);
         return false; 
       }
-      // Direct parsing of day from YYYY-MM-DD string
       const dayOfMonth = parseInt(t.date.substring(t.date.lastIndexOf('-') + 1), 10);
 
       if (periodType === PeriodType.MID_MONTH) {
@@ -609,20 +782,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [appState.data]);
 
   const getMonthlySummary = useCallback((monthYear: string) => {
-    const monthDataToUse = appState.data[monthYear] || createEmptyMonthDataStructure(monthYear, appState.currentUser || undefined);
+     const monthDataToUse = appState.data[monthYear] || createEmptyMonthDataStructure(monthYear, appState.currentUser || undefined);
     
     const allMonthIncome = getAllTransactionsForMonth(monthYear, TransactionType.INCOME);
     const allMonthExpenses = getAllTransactionsForMonth(monthYear, TransactionType.EXPENSE);
 
-    // Calculate totalIncome and totalExpenses based on ALL transactions for the month (for summary display)
     const totalIncome = allMonthIncome.reduce((sum, t: Transaction) => sum + t.amount, 0);
     const totalExpenses = allMonthExpenses.reduce((sum, t: Transaction) => sum + t.amount, 0);
     const netSavings = totalIncome - totalExpenses;
 
-    // Calculate accountBalance dynamically
     let dynamicAccountBalance = monthDataToUse.openingBalance || 0;
     const today = new Date();
-    // Set hours, minutes, seconds, and milliseconds to 0 for date-only comparison
     today.setHours(0, 0, 0, 0); 
 
     allMonthIncome.forEach((incomeTx: Transaction) => {
@@ -658,7 +828,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [appState.data, appState.currentUser, getAllTransactionsForMonth]);
 
-
   const getPeriodSummary = useCallback((monthYear: string, periodType: PeriodType) => {
     const periodTransactions = getTransactionsForPeriod(monthYear, periodType);
     const periodIncome = periodTransactions.filter(t => t.type === TransactionType.INCOME).reduce((sum, t) => sum + t.amount, 0);
@@ -666,6 +835,129 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const periodSavings = periodIncome - periodExpenses;
     return { periodIncome, periodExpenses, periodSavings };
   }, [getTransactionsForPeriod]);
+
+  // User Category Management Functions
+  const addUserCategory = useCallback(async (name: string, type: TransactionType) => {
+    if (!supabase || !isSupabaseConfigured || !appState.currentUser) {
+      setError(SUPABASE_CONFIG_ERROR_MESSAGE);
+      setIsSaving(false);
+      return;
+    }
+    setIsSaving(true);
+    clearError();
+    try {
+      // Check for duplicates (case-insensitive) locally first
+      const existingCategory = appState.userCategories.find(
+        (cat) => cat.name.toLowerCase() === name.toLowerCase() && cat.type === type && cat.user_id === appState.currentUser
+      );
+      if (existingCategory) {
+        throw new Error(`Categoria "${name}" já existe para este tipo.`);
+      }
+
+      const { data: newCategory, error } = await supabase
+        .from('financas_user_categories')
+        .insert({ user_id: appState.currentUser, name, type })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!newCategory) throw new Error("Falha ao criar categoria no banco de dados.");
+      
+      setAppState(prevState => ({
+        ...prevState,
+        userCategories: [...prevState.userCategories, newCategory as UserCategory],
+      }));
+    } catch (err: any) {
+      setError(`Erro ao adicionar categoria: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, appState.userCategories, isSupabaseConfigured]);
+
+  const deleteUserCategory = useCallback(async (categoryId: string) => {
+    if (!supabase || !isSupabaseConfigured || !appState.currentUser) {
+      setError(SUPABASE_CONFIG_ERROR_MESSAGE);
+      setIsSaving(false);
+      return;
+    }
+    setIsSaving(true);
+    clearError();
+    try {
+      const { error } = await supabase
+        .from('financas_user_categories')
+        .delete()
+        .eq('id', categoryId)
+        .eq('user_id', appState.currentUser);
+
+      if (error) throw error;
+
+      setAppState(prevState => ({
+        ...prevState,
+        userCategories: prevState.userCategories.filter(cat => cat.id !== categoryId),
+      }));
+    } catch (err: any) {
+      setError(`Erro ao excluir categoria: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, isSupabaseConfigured]);
+
+  const updateUserCategory = useCallback(async (categoryId: string, newName: string, newType: TransactionType) => {
+    if (!supabase || !isSupabaseConfigured || !appState.currentUser) {
+      setError(SUPABASE_CONFIG_ERROR_MESSAGE);
+      setIsSaving(false);
+      return;
+    }
+    setIsSaving(true);
+    clearError();
+    try {
+      const existingCategory = appState.userCategories.find(
+        (cat) => cat.id !== categoryId && cat.name.toLowerCase() === newName.toLowerCase() && cat.type === newType && cat.user_id === appState.currentUser
+      );
+      if (existingCategory) {
+        throw new Error(`Já existe uma categoria "${newName}" para este tipo.`);
+      }
+
+      const { data: updatedCategory, error } = await supabase
+        .from('financas_user_categories')
+        .update({ name: newName, type: newType })
+        .eq('id', categoryId)
+        .eq('user_id', appState.currentUser)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      if (!updatedCategory) throw new Error("Falha ao atualizar categoria no banco de dados.");
+
+      setAppState(prevState => ({
+        ...prevState,
+        userCategories: prevState.userCategories.map(cat => 
+          cat.id === categoryId ? (updatedCategory as UserCategory) : cat
+        ),
+      }));
+    } catch (err: any) {
+      setError(`Erro ao atualizar categoria: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [appState.currentUser, appState.userCategories, isSupabaseConfigured]);
+
+  const getCombinedIncomeCategories = useCallback((): string[] => {
+    // Now that categories are seeded, all categories for the user are in userCategories.
+    // Default categories are just a starting point.
+    return appState.userCategories
+      .filter(cat => cat.type === TransactionType.INCOME)
+      .map(cat => cat.name)
+      .sort((a, b) => a.localeCompare(b));
+  }, [appState.userCategories]);
+
+  const getCombinedExpenseCategories = useCallback((): string[] => {
+    return appState.userCategories
+      .filter(cat => cat.type === TransactionType.EXPENSE)
+      .map(cat => cat.name)
+      .sort((a, b) => a.localeCompare(b));
+  }, [appState.userCategories]);
+
 
   const getCategorySpendingDetails = useCallback((monthYear: string): CategorySpendingDetail[] => {
     const monthData = appState.data[monthYear];
@@ -680,54 +972,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const details: CategorySpendingDetail[] = [];
     const categoryGoals = monthData.categorySpendingGoals || {};
+    
+    // Now, all categories available to the user are in appState.userCategories
+    const allUserExpenseCategories = appState.userCategories
+                                        .filter(cat => cat.type === TransactionType.EXPENSE)
+                                        .map(cat => cat.name);
 
-    // Iterate over defined expense categories to maintain a consistent order if desired,
-    // or iterate over keys of categoryTotals or categoryGoals
-    EXPENSE_CATEGORIES.forEach(category => {
-      const totalSpent = categoryTotals[category] || 0;
-      const goal = categoryGoals[category] || 0; // Default goal to 0 if not set
-
-      if (totalSpent > 0 || goal > 0) { // Only include categories with spending or a set goal
-        const percentage = goal > 0 ? Math.min((totalSpent / goal) * 100, 200) : (totalSpent > 0 ? 100 : 0); // Cap at 200% for display
-        details.push({
-          category,
-          totalSpent,
-          goal,
-          percentage,
-        });
+    allUserExpenseCategories.forEach(categoryName => {
+      const totalSpent = categoryTotals[categoryName] || 0;
+      const goal = categoryGoals[categoryName] || 0;
+      // Only include if there's spending or a goal > 0
+      if (totalSpent > 0 || goal > 0) { 
+        const percentage = goal > 0 ? Math.min((totalSpent / goal) * 100, 200) : (totalSpent > 0 ? 100 : 0); 
+        details.push({ category: categoryName, totalSpent, goal, percentage });
       }
     });
-    // Add any categories with goals but no spending yet (or vice-versa not covered by EXPENSE_CATEGORIES if goals can be for other cats)
-    Object.keys(categoryGoals).forEach(category => {
-        if (!EXPENSE_CATEGORIES.includes(category) && (categoryGoals[category] || 0) > 0) {
-            const totalSpent = categoryTotals[category] || 0;
-            const goal = categoryGoals[category] || 0;
-            const percentage = goal > 0 ? Math.min((totalSpent / goal) * 100, 200) : (totalSpent > 0 ? 100 : 0);
-            if (!details.find(d => d.category === category)) {
-                 details.push({ category, totalSpent, goal, percentage });
-            }
+
+    // Handle categories that might have goals but are not in the current user's list (e.g. from old data before seeding/management)
+    Object.keys(categoryGoals).forEach(categoryName => {
+      if (!allUserExpenseCategories.includes(categoryName) && (categoryGoals[categoryName] || 0) > 0) {
+        if (!details.find(d => d.category === categoryName)) { // Avoid duplicates if somehow already added
+          const totalSpent = categoryTotals[categoryName] || 0;
+          const goal = categoryGoals[categoryName] || 0;
+          const percentage = goal > 0 ? Math.min((totalSpent / goal) * 100, 200) : (totalSpent > 0 ? 100 : 0);
+          details.push({ category: categoryName, totalSpent, goal, percentage });
         }
+      }
     });
-     Object.keys(categoryTotals).forEach(category => {
-        if (!EXPENSE_CATEGORIES.includes(category) && !categoryGoals[category] && categoryTotals[category] > 0) {
-             if (!details.find(d => d.category === category)) {
-                details.push({ category, totalSpent: categoryTotals[category], goal: 0, percentage: 100 });
-            }
-        }
+
+     // Handle categories from transactions that are not in the current user's list (e.g. from old data)
+     Object.keys(categoryTotals).forEach(categoryName => {
+      if (!allUserExpenseCategories.includes(categoryName) && !details.find(d => d.category === categoryName) && categoryTotals[categoryName] > 0) {
+           details.push({ category: categoryName, totalSpent: categoryTotals[categoryName], goal: 0, percentage: 100 });
+      }
     });
 
 
-    return details.sort((a,b) => (b.goal > 0 ? b.totalSpent/b.goal : b.totalSpent) - (a.goal > 0 ? a.totalSpent/a.goal : a.totalSpent)); // Sort by most overspent or highest %
-  }, [appState.data]);
+    return details.sort((a,b) => (b.goal > 0 ? b.totalSpent/b.goal : b.totalSpent) - (a.goal > 0 ? a.totalSpent/a.goal : a.totalSpent)); 
+  }, [appState.data, appState.userCategories]); // Depend on userCategories as well
 
   return (
     <AppContext.Provider value={{ 
-      ...appState, isLoading, isSaving, error, 
+      ...appState, isLoading: isLoading || isPropagatingRecurring, isSaving, error, 
       addTransaction, deleteTransaction, updateTransaction, 
       updateSettings, updateMonthData, setActiveMonthYear,
       getCurrentMonthData, getTransactionsForPeriod, getAllTransactionsForMonth,
       getMonthlySummary, getPeriodSummary, getCategorySpendingDetails,
       login, logout,
+      // User Category Management
+      userCategories: appState.userCategories,
+      addUserCategory,
+      deleteUserCategory,
+      updateUserCategory, 
+      getCombinedIncomeCategories,
+      getCombinedExpenseCategories,
     }}>
       {children}
     </AppContext.Provider>

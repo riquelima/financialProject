@@ -1,3 +1,4 @@
+
 export enum TransactionType {
   INCOME = 'income',
   EXPENSE = 'expense',
@@ -18,8 +19,17 @@ export interface Transaction {
   date: string; // YYYY-MM-DD
   type: TransactionType;
   period_type: PeriodType; // Indicates the context (1st or 2nd fortnight view) when transaction was added
+  isRecurring?: boolean; // Added for recurring transactions
   created_at?: string;
   updated_at?: string;
+}
+
+export interface UserCategory {
+  id: string; // UUID from Supabase
+  user_id: string; // UUID
+  name: string;
+  type: TransactionType; // 'income' or 'expense'
+  created_at?: string; // Supabase managed
 }
 
 export interface MonthData {
@@ -64,6 +74,7 @@ export interface AppState {
   isAuthenticated: boolean;
   currentUser: string | null; // Stores the user's UUID (id)
   currentUsername: string | null; // Stores the user's login username
+  userCategories: UserCategory[]; // Added for user-defined categories
 }
 
 export interface CategorySpendingDetail {
@@ -77,7 +88,7 @@ export interface AppContextType extends AppState {
   isLoading: boolean;
   isSaving: boolean;
   error?: string;
-  addTransaction: (monthYear: string, periodType: PeriodType, transaction: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at'>) => void;
+  addTransaction: (monthYear: string, periodType: PeriodType, transaction: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at'> & { isRecurring?: boolean }) => void; // Added isRecurring here
   deleteTransaction: (transactionId: string) => void; 
   updateTransaction: (transaction: Transaction) => void; 
   updateSettings: (newSettings: Partial<Omit<AppSettings, 'user_id'>>) => void;
@@ -103,9 +114,16 @@ export interface AppContextType extends AppState {
   getCategorySpendingDetails: (monthYear: string) => CategorySpendingDetail[];
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  // User Category Management
+  userCategories: UserCategory[];
+  addUserCategory: (name: string, type: TransactionType) => Promise<void>;
+  deleteUserCategory: (categoryId: string) => Promise<void>;
+  updateUserCategory: (categoryId: string, newName: string, newType: TransactionType) => Promise<void>; // Added for editing
+  getCombinedIncomeCategories: () => string[];
+  getCombinedExpenseCategories: () => string[];
 }
 
-export const INCOME_CATEGORIES = [
+export const DEFAULT_INCOME_CATEGORIES = [
   "Salário",
   "FGTS",
   "Férias",
@@ -118,7 +136,7 @@ export const INCOME_CATEGORIES = [
   "Outros Proventos"
 ];
 
-export const EXPENSE_CATEGORIES = [
+export const DEFAULT_EXPENSE_CATEGORIES = [
   "Cartão de Crédito",
   "Aluguel",
   "Internet",
