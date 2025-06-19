@@ -1,3 +1,2 @@
-/* Tailwind CDN is used. This file can be used for additional global styles if needed. */
-/* Previously, this file was an output of a local Tailwind build process. */
-/* It is now reverted to a minimal state as the CDN handles Tailwind styles. */
+/* Este arquivo existe para evitar um erro 404 no deploy. 
+   Os estilos principais da aplicação estão no index.html e Tailwind CDN. */

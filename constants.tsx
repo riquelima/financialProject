@@ -2,43 +2,36 @@ import React from 'react';
 
 // New "Dark Neon" Theme Color Palette (Focus on Accent Colors)
 export const COLORS = {
-  // absoluteBlack: '#0D0D0D', // This is now --dark-primary-bg essentially
-
-  // Original accents - can be used for specific highlights if they contrast well with the new theme
+  absoluteBlack: '#0D0D0D', // Retained for specific use cases if needed outside theme
+  
   emeraldLime: '#00FFB2',
   amethystPurple: '#A64AC9',
-  electricBlue: '#00BFFF', // Original electric blue
+  electricBlue: '#00BFFF',
   softMagenta: '#FF55AA',
-  coralRed: '#FF6B6B', 
+  coralRed: '#FF6B6B', // For expenses
   
-  // New theme specific colors (from CSS variables, defined here for JS context if needed)
-  refBlueVibrant: 'var(--ref-blue-vibrant)', // #6366F1
-  refYellowSoft: 'var(--ref-yellow-soft)',   // #FFC75F
-
-  // Added colors based on error report
-  petroleumBlue: '#005F73', // A dark teal/blue
-  deepPurple: '#3D0E61',    // A rich, dark purple
-
-  // Tailwind compatible color strings (use only if direct Tailwind classes are needed for these specific shades)
-  // Prefer using CSS variables with Tailwind's arbitrary value support e.g. bg-[var(--ref-blue-vibrant)]
-  incomeTailwind: 'blue-500', // Example: text-blue-500 if using Tailwind's blue, or use var(--ref-blue-vibrant)
-  expenseTailwind: 'red-500',    // text-red-500 is okay (var(--coral-red) can also be used with Tailwind)
+  // Specific accent colors (Tailwind compatible for direct use if needed)
+  // These are mostly for highlights that don't change with theme, like income/expense text
+  incomeTailwind: 'emerald-400', // e.g., text-emerald-400
+  expenseTailwind: 'red-500',    // e.g., text-red-500
   
-  // Gradients for print2 style (if any)
-  gradientPrint2Bar: 'linear-gradient(135deg, var(--ref-blue-vibrant), var(--ref-yellow-soft))',
-  gradientAiChatSend: 'linear-gradient(135deg, var(--ref-blue-vibrant), var(--amethyst-purple))',
+  // Accent colors for gradients or specific components, not general UI theming
+  petroleumBlue: '[#1C3A4E]', // Used in gradients, keep as is for Tailwind JIT
+  deepPurple: 'purple-500', // Used in gradients
+  discreetNeonGreen: '[#00C896]', // Used in gradients
 
+  // Predefined gradients (using CSS variables for base colors where possible, or fixed accent colors)
+  gradientPrimary: 'linear-gradient(135deg, var(--emerald-lime), var(--amethyst-purple))',
+  gradientSecondary: 'linear-gradient(135deg, var(--electric-blue), var(--soft-magenta))',
+  gradientExpense: 'linear-gradient(135deg, var(--coral-red), var(--amethyst-purple))',
+  gradientBalance: 'linear-gradient(135deg, var(--emerald-lime), var(--electric-blue))',
+  gradientButton: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple), var(--electric-blue))',
+  gradientButtonHover: 'linear-gradient(90deg, var(--electric-blue), var(--amethyst-purple), var(--emerald-lime))',
+  gradientAiChatFab: 'linear-gradient(135deg, var(--electric-blue), var(--amethyst-purple))',
+  gradientAiChatSend: 'linear-gradient(135deg, var(--electric-blue), var(--soft-magenta))',
 
-  // Below gradients are from old theme, might be deprecated or need rework for new theme
-  // gradientPrimary: 'linear-gradient(135deg, var(--emerald-lime), var(--amethyst-purple))',
-  // gradientSecondary: 'linear-gradient(135deg, var(--electric-blue), var(--soft-magenta))',
-  // gradientExpense: 'linear-gradient(135deg, var(--coral-red), var(--amethyst-purple))',
-  // gradientBalance: 'linear-gradient(135deg, var(--emerald-lime), var(--electric-blue))',
-  // gradientButton: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple), var(--electric-blue))',
-  // gradientButtonHover: 'linear-gradient(90deg, var(--electric-blue), var(--amethyst-purple), var(--emerald-lime))',
-  // gradientAiChatFab: 'linear-gradient(135deg, var(--electric-blue), var(--amethyst-purple))',
-  
-  // twGradientButton: 'bg-gradient-to-r from-[#00FFB2] via-[#A64AC9] to-[#00BFFF]', // Old theme
+  // Tailwind compatible gradient classes for specific elements (keep if these are unique visual features)
+  twGradientButton: 'bg-gradient-to-r from-[#00FFB2] via-[#A64AC9] to-[#00BFFF]', // emerald, amethyst, electric
 };
 
 // Icons (Lucide-React inspired SVGs) - No changes to SVG definitions themselves
@@ -53,6 +46,9 @@ export const PlusIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 export const TrendingUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+);
+export const TrendingDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
 );
 export const CogIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path><path d="M12 2v2"></path><path d="M12 22v-2"></path><path d="m17 20.66-1-1.73"></path><path d="M11 10.27 7 3.34"></path><path d="m20.66 17-1.73-1"></path><path d="m3.34 7 1.73 1"></path><path d="M14 12h8"></path><path d="M2 12h2"></path><path d="m20.66 7-1.73 1"></path><path d="m3.34 17 1.73-1"></path><path d="m17 3.34-1 1.73"></path><path d="m11 13.73-4 6.93"></path></svg>
@@ -121,6 +117,13 @@ export const SendIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
   </svg>
 );
+export const TargetIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10"></circle>
+    <circle cx="12" cy="12" r="6"></circle>
+    <circle cx="12" cy="12" r="2"></circle>
+  </svg>
+);
 
 
 export const APP_NAME = "Controle Financeiro Pessoal";
@@ -128,16 +131,7 @@ export const APP_NAME = "Controle Financeiro Pessoal";
 export const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export const PIE_CHART_COLORS = [
-  '#6366F1', // ref-blue-vibrant
-  '#FFC75F', // ref-yellow-soft
-  '#8B5CF6', // A purple that might fit (Tailwind purple-500)
-  '#34D399', // An emerald/green (Tailwind emerald-400)
-  '#F472B6', // A pink (Tailwind pink-400)
-  '#60A5FA', // Lighter blue (Tailwind blue-400)
-  '#FBBF24', // Amber/darker yellow (Tailwind amber-400)
-  '#A78BFA', // Lighter purple (Tailwind violet-400)
-  '#22D3EE', // Cyan (Tailwind cyan-400)
-  '#FB923C', // Orange (Tailwind orange-400)
-  '#EC4899', // Fuchsia (Tailwind fuchsia-500)
-  '#A3E635', // Lime (Tailwind lime-400)
+  '#00FFB2', '#A64AC9', '#00BFFF', '#FF55AA', '#FF6B6B', '#F9C74F', // emerald, amethyst, electric, magenta, coral, yellow
+  '#4BC0C0', '#9966FF', '#FF9F40', '#E7E9ED', '#577590', '#F8961E',
+  '#FF6384', '#36A2EB', '#FFCE56', '#F94144', '#A0E7E5', '#B4F8C8' 
 ];

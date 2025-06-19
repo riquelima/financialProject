@@ -1,23 +1,40 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": true,
-    "module": "ESNext",
-    "strict": true,
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "jsx": "preserve",
-    "esModuleInterop": true,
+    "target": "ES2020",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler", // or "node" if preferred, "bundler" is modern
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "jsx": "react-jsx",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "sourceMap": true,
     "baseUrl": ".",
-    "types": ["node", "vite/client"],
     "paths": {
-      "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"]
+      // Example: "@/components/*": ["components/*"]
     }
-  }
+  },
+  "include": [
+    "index.tsx",
+    "App.tsx",
+    "constants.tsx",
+    "types.ts",
+    "ErrorBoundary.tsx",
+    "components/**/*.tsx",
+    "hooks/**/*.tsx",
+    "screens/**/*.tsx",
+    "utils/**/*.ts"
+    // Note: api/chat.js is a .js file and typically handled by Vercel's serverless function runtime directly.
+    // It does not need to be included here for client-side TS compilation.
+  ],
+  "exclude": ["node_modules", "dist", "api"]
 }

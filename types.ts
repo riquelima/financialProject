@@ -17,23 +17,28 @@ export interface Transaction {
   category: string;
   date: string; // YYYY-MM-DD
   type: TransactionType;
-  period_type: PeriodType; // Added to transaction to know if it's midMonth or endOfMonth
+  period_type: PeriodType; // Indicates the context (1st or 2nd fortnight view) when transaction was added
   created_at?: string;
   updated_at?: string;
-}
-
-export interface FinancialPeriodData {
-  transactions: Transaction[];
 }
 
 export interface MonthData {
   id?: string; // UUID from Supabase months_data table
   monthYear: string; // "YYYY-MM"
-  midMonth: FinancialPeriodData;
-  endOfMonth: FinancialPeriodData;
+  transactions: Transaction[]; // All transactions for this month
   openingBalance: number;
   creditCardLimit?: number;
   user_id?: string; // UUID
+
+  // Goals for "Controle Quinzenal" (FinancialPeriodScreen)
+  midMonthSpendingGoal?: number;
+  midMonthSavingsGoal?: number;
+  endOfMonthSpendingGoal?: number;
+  endOfMonthSavingsGoal?: number;
+
+  // Goals for "Fechamento Mensal" (MonthlyAnalysisScreen)
+  monthlyOverallSpendingGoal?: number;
+  categorySpendingGoals?: Record<string, number>; // e.g., { "Alimentação": 300, "Transporte": 150 }
 }
 
 export interface AppSettings {
@@ -57,8 +62,15 @@ export interface AppState {
   data: Record<string, MonthData>; // Key is "YYYY-MM"
   settings: AppSettings | null; // Settings can be null until loaded
   isAuthenticated: boolean;
-  currentUser: string | null; // Stores the user's UUID (id from 'users' table)
-  currentUsername: string | null; // Stores the user's login username for display or other purposes
+  currentUser: string | null; // Stores the user's UUID (id)
+  currentUsername: string | null; // Stores the user's login username
+}
+
+export interface CategorySpendingDetail {
+  category: string;
+  totalSpent: number;
+  goal: number;
+  percentage: number;
 }
 
 export interface AppContextType extends AppState {
@@ -66,12 +78,12 @@ export interface AppContextType extends AppState {
   isSaving: boolean;
   error?: string;
   addTransaction: (monthYear: string, periodType: PeriodType, transaction: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at'>) => void;
-  deleteTransaction: (transactionId: string) => void; // Simplified: needs only transactionId
-  updateTransaction: (transaction: Transaction) => void; // Pass the full transaction object
+  deleteTransaction: (transactionId: string) => void; 
+  updateTransaction: (transaction: Transaction) => void; 
   updateSettings: (newSettings: Partial<Omit<AppSettings, 'user_id'>>) => void;
-  updateMonthData: (monthYear: string, data: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit'>>) => void;
+  updateMonthData: (monthYear: string, data: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit' | 'midMonthSpendingGoal' | 'midMonthSavingsGoal' | 'endOfMonthSpendingGoal' | 'endOfMonthSavingsGoal' | 'monthlyOverallSpendingGoal' | 'categorySpendingGoals'>>) => void;
   setActiveMonthYear: (monthYear: string) => void;
-  getCurrentMonthData: () => MonthData | null; // Can be null if no data for active month
+  getCurrentMonthData: () => MonthData | null; 
   getTransactionsForPeriod: (monthYear: string, periodType: PeriodType, transactionType?: TransactionType) => Transaction[];
   getAllTransactionsForMonth: (monthYear: string, transactionType?: TransactionType) => Transaction[];
   getMonthlySummary: (monthYear: string) => {
@@ -83,6 +95,12 @@ export interface AppContextType extends AppState {
     creditCardRemainingLimit?: number;
     totalBenefits: number;
   };
+  getPeriodSummary: (monthYear: string, periodType: PeriodType) => {
+    periodIncome: number;
+    periodExpenses: number;
+    periodSavings: number;
+  };
+  getCategorySpendingDetails: (monthYear: string) => CategorySpendingDetail[];
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }

@@ -38,7 +38,7 @@ const HistoryScreen: React.FC = () => {
   
   return (
     <div className="p-4 space-y-6">
-      <div className={`flex justify-between items-center p-4 bg-gradient-to-r from-[${COLORS.petroleumBlue}] to-[${COLORS.deepPurple}] rounded-lg shadow-md mb-6`}>
+      <div className={`flex justify-between items-center p-4 bg-gradient-to-r from-${COLORS.petroleumBlue} to-${COLORS.deepPurple} rounded-lg shadow-md mb-6`}>
         <h1 className="text-2xl font-bold text-white">📜 Histórico Mensal</h1>
       </div>
 
@@ -76,7 +76,7 @@ const HistoryScreen: React.FC = () => {
               </div>
                <button
                 onClick={() => setActiveMonthYear(monthYear)}
-                className={`mt-4 w-full text-sm bg-[${COLORS.petroleumBlue}]/80 hover:bg-[${COLORS.petroleumBlue}] text-white font-semibold py-2 px-4 rounded-lg shadow hover:shadow-md transition-all duration-200`}
+                className={`mt-4 w-full text-sm bg-${COLORS.petroleumBlue}/80 hover:bg-${COLORS.petroleumBlue} text-white font-semibold py-2 px-4 rounded-lg shadow hover:shadow-md transition-all duration-200`}
               >
                 Ver Detalhes de {getMonthName(monthYear)} no Dashboard
               </button>

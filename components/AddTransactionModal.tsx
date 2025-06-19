@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useAppContext } from '../hooks/useAppContext'; 
@@ -73,30 +74,30 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
 
   const categories = transactionType === TransactionType.INCOME ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
   
-  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-sm rounded-xl focus:border-[var(--input-focus-border)] focus:ring-1 focus:ring-[var(--input-focus-border)]/50 block p-3 transition-all duration-300 ease-in-out input-neon-focus font-normal"; // Poppins Normal, more rounded
-  const labelBaseClasses = "block text-xs font-medium mb-1.5 text-[var(--text-secondary)]"; // Poppins Medium
+  const inputBaseClasses = "w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--placeholder-text)] text-base rounded-[10px] focus:border-[var(--input-focus-border)] focus:ring-1 focus:ring-[var(--input-focus-border)]/50 block p-3.5 transition-all duration-300 ease-in-out input-neon-focus";
+  const labelBaseClasses = "block text-xs font-semibold mb-1.5 text-[var(--text-secondary)]";
 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={transactionToEdit ? "Editar Transação" : "Adicionar Transação"}>
-      <form onSubmit={handleSubmit} className="space-y-5"> {/* Adjusted spacing */}
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="transactionType" className={labelBaseClasses}>Tipo</label>
-          <div className="flex rounded-xl shadow-sm overflow-hidden border border-[var(--card-border-light)]"> {/* More rounded */}
+          <div className="flex rounded-[10px] shadow-sm overflow-hidden border border-[var(--card-border-light)]">
             <button
               type="button"
               onClick={() => { setTransactionType(TransactionType.INCOME); setCategory(''); }}
-              className={`flex-1 py-2.5 px-4 text-sm font-medium transition-all duration-300 ease-in-out focus:outline-none 
-                          ${transactionType === TransactionType.INCOME ? 'text-[var(--ref-white)] shadow-md' : 'text-[var(--text-primary)] hover:bg-[var(--tertiary-bg)]'}`}
-              style={transactionType === TransactionType.INCOME ? { background: 'var(--ref-blue-vibrant)' } : { background: 'var(--secondary-bg)'}} // Use ref-blue-vibrant for active income
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold transition-all duration-300 ease-in-out focus:outline-none 
+                          ${transactionType === TransactionType.INCOME ? 'text-[var(--primary-bg)] shadow-md' : 'text-[var(--text-primary)] hover:bg-[var(--tertiary-bg)]'}`}
+              style={transactionType === TransactionType.INCOME ? { background: 'var(--emerald-lime)' } : { background: 'var(--secondary-bg)'}}
             >
               Entrada
             </button>
             <button
               type="button"
               onClick={() => { setTransactionType(TransactionType.EXPENSE); setCategory(''); }}
-              className={`flex-1 py-2.5 px-4 text-sm font-medium transition-all duration-300 ease-in-out focus:outline-none 
-                          ${transactionType === TransactionType.EXPENSE ? 'text-[var(--ref-white)] shadow-md' : 'text-[var(--text-primary)] hover:bg-[var(--tertiary-bg)]'}`}
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold transition-all duration-300 ease-in-out focus:outline-none 
+                          ${transactionType === TransactionType.EXPENSE ? 'text-[var(--primary-bg)] shadow-md' : 'text-[var(--text-primary)] hover:bg-[var(--tertiary-bg)]'}`}
               style={transactionType === TransactionType.EXPENSE ? { background: 'var(--coral-red)' } : { background: 'var(--secondary-bg)'}}
             >
               Saída
@@ -151,7 +152,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            className={`${inputBaseClasses}`}
+            className={`${inputBaseClasses} dark-date-picker`}
           />
         </div>
 
@@ -159,14 +160,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen, onClo
           <button 
             type="button" 
             onClick={onClose}
-            className="py-2.5 px-5 border border-[var(--ref-card-border)] text-sm font-semibold rounded-xl text-[var(--text-secondary)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--ref-blue-vibrant)] transition-all duration-300 ease-in-out"
-            // Using ref-card-border for secondary button, more rounded
+            className="py-2.5 px-5 border border-[var(--card-border)] text-sm font-semibold rounded-[10px] text-[var(--text-secondary)] hover:bg-[var(--button-hover-bg)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--amethyst-purple)] transition-all duration-300 ease-in-out"
           >
             Cancelar
           </button>
           <button 
             type="submit"
-            className="ref-button-primary py-2.5 px-6 text-sm shadow-md hover:shadow-lg" // Use new button class
+            className="py-2.5 px-6 text-white text-sm font-semibold rounded-[10px] transition-all duration-300 ease-in-out transform hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--secondary-bg)] focus:ring-[var(--emerald-lime)] shadow-lg hover:shadow-xl button-gradient-hover"
+            style={{ background: 'linear-gradient(90deg, var(--emerald-lime), var(--amethyst-purple))', backgroundSize: '200% auto' }}
           >
             {transactionToEdit ? 'Salvar Alterações' : 'Adicionar'}
           </button>

@@ -1,29 +1,26 @@
 
 
-
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, BENEFIT_CATEGORIES, FinancialPeriodData } from '../types';
-import { getCurrentMonthYear, generateId as generateClientSideId } from '../utils/formatters'; // Renamed to avoid conflict if Supabase uses 'id'
+import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, BENEFIT_CATEGORIES, EXPENSE_CATEGORIES, CategorySpendingDetail } from '../types';
+import { getCurrentMonthYear } from '../utils/formatters'; 
 
 // Supabase Client Initialization
-const YOUR_SUPABASE_URL_HERE: string = 'https://wbxjsqixqxdcagiorccx.supabase.co'; // Updated with user's derived URL
-const YOUR_SUPABASE_ANON_KEY_HERE: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndieGpzcWl4cXhkY2FnaW9yY2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5NDY2MTEsImV4cCI6MjA2NDUyMjYxMX0.k6XbupkpNarKbmIGKUPYnRFh9Fha5Li4gq5l5HvRe7w'; // Updated with user's Anon Key
+const YOUR_SUPABASE_URL_HERE: string = 'https://kwvqumyzkezzatuhqoda.supabase.co'; 
+const YOUR_SUPABASE_ANON_KEY_HERE: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3dnF1bXl6a2V6emF0dWhxb2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NzYxMDQsImV4cCI6MjA2NTM1MjEwNH0.wGSc9wjK1CjwWRg2O8JnYOygkFjESryvQzV90YTRXPY'; 
 
 let supabase: SupabaseClient | null = null;
 let isSupabaseConfigured = false;
 
-// Check if the placeholders have been replaced
-const URL_PLACEHOLDER = 'YOUR_SUPABASE_URL_PLACEHOLDER'; // Constant for original placeholder text
+const URL_PLACEHOLDER = 'YOUR_SUPABASE_URL_PLACEHOLDER'; 
 const KEY_PLACEHOLDER_LITERAL = 'YOUR_SUPABASE_ANON_KEY_PLACEHOLDER';
 
 
 if (YOUR_SUPABASE_URL_HERE === URL_PLACEHOLDER || YOUR_SUPABASE_URL_HERE.trim() === '' ||
-    YOUR_SUPABASE_ANON_KEY_HERE === KEY_PLACEHOLDER_LITERAL || YOUR_SUPABASE_ANON_KEY_HERE.trim() === '') { // Corrected placeholder check
+    YOUR_SUPABASE_ANON_KEY_HERE === KEY_PLACEHOLDER_LITERAL || YOUR_SUPABASE_ANON_KEY_HERE.trim() === '') { 
   console.error(
     "Supabase URL or Anon Key is not configured. " +
-    "Please update YOUR_SUPABASE_URL_PLACEHOLDER and YOUR_SUPABASE_ANON_KEY_PLACEHOLDER " + // Keep placeholder names consistent in message
+    "Please update YOUR_SUPABASE_URL_PLACEHOLDER and YOUR_SUPABASE_ANON_KEY_PLACEHOLDER " + 
     "in hooks/useAppContext.tsx with your actual Supabase credentials."
   );
   isSupabaseConfigured = false;
@@ -41,33 +38,38 @@ if (YOUR_SUPABASE_URL_HERE === URL_PLACEHOLDER || YOUR_SUPABASE_URL_HERE.trim() 
 
 // localStorage keys
 const LOCAL_STORAGE_USER_ID = 'financeAppUserId';
-const LOCAL_STORAGE_USERNAME = 'financeAppUsername'; // Store username for convenience
+const LOCAL_STORAGE_USERNAME = 'financeAppUsername'; 
 const LOCAL_STORAGE_SESSION_EXPIRY = 'financeAppSessionExpiry';
 const SESSION_DURATION = 2 * 60 * 60 * 1000; // 2 hours
 
 const createEmptyMonthDataStructure = (monthYear: string, userId?: string, id?: string): MonthData => ({
-  id, // Supabase ID for the months_data record
+  id, 
   monthYear,
-  midMonth: { transactions: [] },
-  endOfMonth: { transactions: [] },
+  transactions: [],
   openingBalance: 0,
   creditCardLimit: undefined,
   user_id: userId,
+  midMonthSpendingGoal: 0,
+  midMonthSavingsGoal: 0,
+  endOfMonthSpendingGoal: 0,
+  endOfMonthSavingsGoal: 0,
+  monthlyOverallSpendingGoal: 0,
+  categorySpendingGoals: {},
 });
 
 const defaultAppSettings: AppSettings = {
   currencySymbol: 'R$',
   userNameDisplay: '',
-  theme: 'dark', // Default theme
+  theme: 'dark', 
 };
 
 const defaultInitialAppState: AppState = {
   activeMonthYear: getCurrentMonthYear(),
   data: {},
-  settings: null, // Initialize as null, will be fetched
+  settings: null, 
   isAuthenticated: false,
-  currentUser: null, // Will store User UUID (id)
-  currentUsername: null, // Will store User login username
+  currentUser: null, 
+  currentUsername: null, 
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -77,39 +79,35 @@ const SUPABASE_CONFIG_ERROR_MESSAGE = "Supabase não está configurado. Por favo
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [appState, setAppState] = useState<AppState>(defaultInitialAppState);
-  const [isLoading, setIsLoading] = useState(true); // Start as true until config check
+  const [isLoading, setIsLoading] = useState(true); 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
   const clearError = () => setError('');
 
-  // Effect to apply theme class to body
   useEffect(() => {
     if (appState.settings?.theme) {
       document.body.classList.remove('theme-dark', 'theme-light');
       document.body.classList.add(`theme-${appState.settings.theme}`);
     } else {
-      // Default to dark theme if no settings yet (or explicitly remove light if it was there)
       document.body.classList.remove('theme-light');
       document.body.classList.add('theme-dark');
     }
   }, [appState.settings?.theme]);
 
 
-  // Helper to get or create a MonthData record in Supabase
   const getOrCreateSupabaseMonthRecord = useCallback(async (userId: string, monthYear: string): Promise<string> => {
     if (!supabase || !isSupabaseConfigured) {
       throw new Error(SUPABASE_CONFIG_ERROR_MESSAGE);
     }
-    // Check if exists
     let { data: existingMonth, error: fetchError } = await supabase
-      .from('months_data')
+      .from('financas_months_data')
       .select('id')
       .eq('user_id', userId)
       .eq('month_year', monthYear)
-      .maybeSingle(); // Use maybeSingle for safer check
+      .maybeSingle(); 
 
-    if (fetchError) { // Any error other than not found (which maybeSingle handles by returning null data)
+    if (fetchError) { 
       throw new Error(`Falha ao verificar mês no Supabase: ${fetchError.message}`);
     }
 
@@ -117,12 +115,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return existingMonth.id;
     }
 
-    // Create if not exists
     const { data: newMonth, error: insertError } = await supabase
-      .from('months_data')
-      .insert({ user_id: userId, month_year: monthYear, opening_balance: 0 })
+      .from('financas_months_data')
+      .insert({ 
+        user_id: userId, 
+        month_year: monthYear, 
+        opening_balance: 0,
+        mid_month_spending_goal: 0,
+        mid_month_savings_goal: 0,
+        end_of_month_spending_goal: 0,
+        end_of_month_savings_goal: 0,
+        monthly_overall_spending_goal: 0, 
+        category_spending_goals: {},      
+       })
       .select('id')
-      .single(); // single is okay here, we expect one row back after insert
+      .single(); 
 
     if (insertError || !newMonth) {
       throw new Error(`Falha ao criar registro do mês ${monthYear} no Supabase: ${insertError?.message || 'No data returned'}`);
@@ -130,6 +137,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newMonth.id;
   }, [isSupabaseConfigured]); 
 
+  const mapRawSettingsToAppSettings = (rawSettings: any): AppSettings | null => {
+    if (!rawSettings) return null;
+    return {
+      user_id: rawSettings.user_id,
+      currencySymbol: rawSettings.currencysymbol, // Supabase column name is lowercase
+      userNameDisplay: rawSettings.usernamedisplay, // Supabase column name is lowercase
+      theme: rawSettings.theme,
+    } as AppSettings;
+  };
 
   const loadAllUserDataForUser = useCallback(async (userId: string, username: string) => {
     if (!supabase || !isSupabaseConfigured) {
@@ -146,135 +162,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       // 1. Fetch/Create Settings
-      let { data: fetchedSettings, error: settingsQueryError } = await supabase
-        .from('settings')
-        .select('*')
+      let { data: fetchedRawSettings, error: settingsQueryError } = await supabase
+        .from('financas_settings')
+        .select('user_id, currencysymbol, usernamedisplay, theme') 
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (settingsQueryError) {
-        console.error('Supabase settings initial fetch error:', settingsQueryError);
-        throw settingsQueryError;
-      }
+      if (settingsQueryError) throw settingsQueryError;
 
-      if (fetchedSettings) {
-        settingsData = fetchedSettings as AppSettings;
-        console.log(`Settings found for user ${userId}. Theme: ${settingsData.theme}`);
+      if (fetchedRawSettings) {
+        settingsData = mapRawSettingsToAppSettings(fetchedRawSettings);
       } else {
-        console.log(`Settings not found for user ${userId}, attempting to create default settings.`);
-        try {
-          const defaultSettingsForNewUser: Omit<AppSettings, 'user_id'> = {
-            currencySymbol: 'R$',
-            userNameDisplay: username,
-            theme: 'dark', // Default theme for new users
+         try {
+          const defaultSettingsPayload = { 
+            user_id: userId, 
+            currencysymbol: 'R$', // Use lowercase for Supabase column
+            usernamedisplay: username, // Use lowercase for Supabase column
+            theme: 'dark',
           };
-          const { data: newSettings, error: insertSettingsError } = await supabase
-            .from('settings')
-            .insert({ ...defaultSettingsForNewUser, user_id: userId })
-            .select()
-            .single();
+          const { data: newRawSettings, error: insertSettingsError } = await supabase
+            .from('financas_settings').insert(defaultSettingsPayload)
+            .select('user_id, currencysymbol, usernamedisplay, theme').single();
           if (insertSettingsError) throw insertSettingsError;
-          settingsData = newSettings as AppSettings;
-          console.log(`Default settings created for user ${userId}. Theme: ${settingsData.theme}`);
+          settingsData = mapRawSettingsToAppSettings(newRawSettings);
         } catch (insertError: any) {
+          // Non-23505 unique violation code indicates other issues.
+          // For 23505, it means the record was likely created between the check and the insert (race condition).
           if (insertError.code === '23505') { 
-            console.warn(`Insert default settings failed with 23505 for user ${userId}. Assuming record exists. Re-fetching.`);
-            const { data: refetchedSettings, error: refetchError } = await supabase
-              .from('settings')
-              .select('*')
-              .eq('user_id', userId)
-              .single(); 
-            if (refetchError) {
-              console.error('Error re-fetching settings after 23505:', refetchError);
-              throw new Error(`Falha ao re-buscar configurações após erro de duplicidade (23505). Detalhe: ${refetchError.message}`);
-            }
-            if (!refetchedSettings) {
-              console.error('Settings re-fetch after 23505 returned no data, this is unexpected.');
-              throw new Error('Configurações não encontradas ao tentar re-buscar após erro de duplicidade (23505).');
-            }
-            settingsData = refetchedSettings as AppSettings;
-            console.log('Settings successfully re-fetched after 23505 error.');
-          } else {
-            console.error('Supabase insert default settings error (non-23505):', insertError);
+            console.warn("Supabase insert default settings error (23505): Tentando re-buscar os dados.");
+            const { data: refetchedRawSettings, error: refetchError } = await supabase
+              .from('financas_settings').select('user_id, currencysymbol, usernamedisplay, theme')
+              .eq('user_id', userId).single(); 
+            if (refetchError || !refetchedRawSettings) throw refetchError || new Error('Falha ao re-buscar configurações após erro 23505.');
+            settingsData = mapRawSettingsToAppSettings(refetchedRawSettings);
+          } else { 
+            console.error("Supabase insert default settings error (non-23505):", insertError);
             throw insertError; 
           }
         }
       }
-
-      // Ensure settingsData has a theme, default if somehow missing
-      if (settingsData && !settingsData.theme) {
-        settingsData.theme = 'dark';
-      }
+      if (settingsData && !settingsData.theme) settingsData.theme = 'dark';
 
 
-      // 2. Fetch/Create Active Month Year (Logic remains the same)
+      // 2. Fetch/Create Active Month Year
       let { data: activeMonthRecord, error: activeMonthQueryError } = await supabase
-        .from('active_months')
-        .select('active_month_year')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .from('financas_active_months').select('active_month_year').eq('user_id', userId).maybeSingle();
       
-      if (activeMonthQueryError) {
-        console.error('Supabase active_month initial fetch error:', activeMonthQueryError);
-        throw activeMonthQueryError;
-      }
+      if (activeMonthQueryError) throw activeMonthQueryError;
 
       if (activeMonthRecord) {
         activeMonthYearToSet = activeMonthRecord.active_month_year;
-        console.log(`Active month found for user ${userId}: ${activeMonthYearToSet}`);
       } else { 
-         console.log(`Active month not found for user ${userId}, attempting to create default.`);
          try {
            const { error: insertActiveMonthError } = await supabase
-             .from('active_months')
-             .insert({ user_id: userId, active_month_year: activeMonthYearToSet });
+             .from('financas_active_months').insert({ user_id: userId, active_month_year: activeMonthYearToSet });
            if (insertActiveMonthError) throw insertActiveMonthError;
-           console.log(`Default active month created for user ${userId}: ${activeMonthYearToSet}`);
          } catch (insertError: any) {
            if (insertError.code === '23505') {
-             console.warn(`Insert default active_month failed with 23505 for user ${userId}. Assuming record exists. Re-fetching.`);
              const { data: refetchedActiveMonth, error: refetchError } = await supabase
-               .from('active_months')
-               .select('active_month_year')
-               .eq('user_id', userId)
-               .single(); 
-             if (refetchError) {
-               console.error('Error re-fetching active_month after 23505:', refetchError);
-               throw new Error(`Falha ao re-buscar mês ativo após erro de duplicidade (23505). Detalhe: ${refetchError.message}`);
-             }
-             if (!refetchedActiveMonth) {
-                console.error('Active_month re-fetch after 23505 returned no data.');
-                throw new Error('Mês ativo não encontrado ao tentar re-buscar após erro de duplicidade (23505).');
-             }
+               .from('financas_active_months').select('active_month_year').eq('user_id', userId).single(); 
+             if (refetchError || !refetchedActiveMonth) throw refetchError || new Error('Active month re-fetch failed');
              activeMonthYearToSet = refetchedActiveMonth.active_month_year;
-             console.log('Active_month successfully re-fetched after 23505 error.');
-           } else {
-             console.error('Supabase insert default active_month error (non-23505):', insertError);
-             throw insertError;
-           }
+           } else { throw insertError; }
          }
       }
 
       // 3. Fetch all MonthData entries for the user
       const { data: userMonthsData, error: monthsError } = await supabase
-        .from('months_data')
-        .select('*')
-        .eq('user_id', userId);
-      if (monthsError) {
-        console.error('Supabase months_data fetch error:', monthsError);
-        throw monthsError;
-      }
+        .from('financas_months_data').select('*').eq('user_id', userId);
+      if (monthsError) throw monthsError;
 
       // 4. Fetch all Transactions for the user
       const { data: userTransactions, error: transactionsError } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false }); 
-      if (transactionsError) {
-        console.error('Supabase transactions fetch error:', transactionsError);
-        throw transactionsError;
-      }
+        .from('financas_transactions').select('*').eq('user_id', userId).order('date', { ascending: false }); 
+      if (transactionsError) throw transactionsError;
 
       // 5. Reconstruct AppState.data
       const reconstructedData: Record<string, MonthData> = {};
@@ -287,67 +248,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             openingBalance: mData.opening_balance,
             creditCardLimit: mData.credit_card_limit,
             user_id: mData.user_id,
-            midMonth: {
-              transactions: monthTransactions.filter(t => t.period_type === PeriodType.MID_MONTH)
-            },
-            endOfMonth: {
-              transactions: monthTransactions.filter(t => t.period_type === PeriodType.END_OF_MONTH)
-            }
+            transactions: monthTransactions,
+            midMonthSpendingGoal: mData.mid_month_spending_goal,
+            midMonthSavingsGoal: mData.mid_month_savings_goal,
+            endOfMonthSpendingGoal: mData.end_of_month_spending_goal,
+            endOfMonthSavingsGoal: mData.end_of_month_savings_goal,
+            monthlyOverallSpendingGoal: mData.monthly_overall_spending_goal, 
+            categorySpendingGoals: mData.category_spending_goals || {},      
           };
         }
       }
       
       if (!reconstructedData[activeMonthYearToSet]) {
-        console.log(`Data for active month ${activeMonthYearToSet} not found locally, ensuring Supabase record exists.`);
         const monthId = await getOrCreateSupabaseMonthRecord(userId, activeMonthYearToSet);
         reconstructedData[activeMonthYearToSet] = createEmptyMonthDataStructure(activeMonthYearToSet, userId, monthId);
-        console.log(`Local data structure for ${activeMonthYearToSet} created/ensured.`);
       }
       
       setAppState({
         isAuthenticated: true,
         currentUser: userId,
         currentUsername: username,
-        settings: settingsData || defaultAppSettings, // Fallback to defaultAppSettings if somehow still null
+        settings: settingsData || defaultAppSettings, 
         activeMonthYear: activeMonthYearToSet,
         data: reconstructedData,
       });
-      console.log("User data loaded and state updated for:", username);
 
     } catch (err: any) {
       const baseUiMessage = "Falha crítica ao carregar os dados do usuário";
       let finalUiMessage = baseUiMessage;
-
-      const errorProperties = ['message', 'code', 'details', 'hint'];
-      const allErrorKeys = Object.getOwnPropertyNames(err).concat(errorProperties.filter(p => err[p] !== undefined));
-      console.error(`${baseUiMessage}. Erro completo:`, JSON.stringify(err, Array.from(new Set(allErrorKeys)), 2));
-      
+      console.error(`${baseUiMessage}. Erro completo:`, JSON.stringify(err, Object.getOwnPropertyNames(err).concat(['message', 'code', 'details', 'hint'].filter(p => err[p] !== undefined)), 2));
       let parts = [baseUiMessage];
-      if (err.message && typeof err.message === 'string' && err.message.trim() !== "") parts.push(`Detalhe: ${err.message.trim()}`);
-      
-      if (err.code && typeof err.code === 'string' && err.code.trim() !== "") parts.push(`Código: ${err.code.trim()}`);
-      else if (err.code) parts.push(`Código: ${String(err.code)}`); 
-
-      if (err.details && typeof err.details === 'string' && err.details.trim() !== "") parts.push(`Info: ${err.details.trim()}`);
-      if (err.hint && typeof err.hint === 'string' && err.hint.trim() !== "") parts.push(`Dica: ${err.hint.trim()}`);
-      
-      finalUiMessage = parts.join('. ') + ". Tente recarregar a página ou contate o suporte se o problema persistir.";
-      
+      if (err.message) parts.push(`Detalhe: ${err.message}`);
+      if (err.code) parts.push(`Código: ${err.code}`);
+      if (err.details) parts.push(`Info: ${err.details}`);
+      if (err.hint) parts.push(`Dica: ${err.hint}`);
+      finalUiMessage = parts.join('. ') + ". Tente recarregar a página ou contate o suporte.";
       setError(finalUiMessage);
       setAppState(prevState => ({ 
-        ...defaultInitialAppState,
-        isAuthenticated: true, 
-        currentUser: userId,
-        currentUsername: username,
-        settings: defaultAppSettings, 
-        data: { [getCurrentMonthYear()]: createEmptyMonthDataStructure(getCurrentMonthYear(),userId) }
+        ...defaultInitialAppState, isAuthenticated: true, currentUser: userId, currentUsername: username,
+        settings: defaultAppSettings, data: { [getCurrentMonthYear()]: createEmptyMonthDataStructure(getCurrentMonthYear(),userId) }
       }));
     } finally {
       setIsLoading(false); 
     }
   }, [getOrCreateSupabaseMonthRecord, isSupabaseConfigured]);
 
-  // Effect for initial config check and session check
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setError(SUPABASE_CONFIG_ERROR_MESSAGE);
@@ -355,23 +300,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsLoading(false);
       return;
     }
-    
     setIsLoading(true);
     try {
       const storedUserId = localStorage.getItem(LOCAL_STORAGE_USER_ID);
       const storedUsername = localStorage.getItem(LOCAL_STORAGE_USERNAME);
       const storedExpiry = localStorage.getItem(LOCAL_STORAGE_SESSION_EXPIRY);
-
       if (storedUserId && storedUsername && storedExpiry && Date.now() < parseInt(storedExpiry, 10)) {
-        console.log("Sessão válida encontrada para:", storedUsername);
-         setAppState(prevState => ({
-          ...prevState,
-          isAuthenticated: true,
-          currentUser: storedUserId,
-          currentUsername: storedUsername,
-        }));
+         setAppState(prevState => ({ ...prevState, isAuthenticated: true, currentUser: storedUserId, currentUsername: storedUsername }));
       } else {
-        if (storedUserId) console.log("Sessão expirada ou inválida, limpando localStorage.");
         localStorage.removeItem(LOCAL_STORAGE_USER_ID);
         localStorage.removeItem(LOCAL_STORAGE_USERNAME);
         localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
@@ -385,143 +321,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []); 
 
-  // Effect to load data when user is authenticated, or manage isLoading state
    useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setIsLoading(false); 
-      return;
-    }
-
+    if (!isSupabaseConfigured) { setIsLoading(false); return; }
     if (appState.isAuthenticated && appState.currentUser && appState.currentUsername) {
       if (!appState.data || Object.keys(appState.data).length === 0 || !appState.settings) {
         loadAllUserDataForUser(appState.currentUser, appState.currentUsername);
-      } else {
-        setIsLoading(false);
-      }
-    } else if (!appState.isAuthenticated) {
-      setIsLoading(false);
-    }
-  }, [
-    appState.isAuthenticated, 
-    appState.currentUser, 
-    appState.currentUsername, 
-    appState.data,
-    appState.settings,
-    loadAllUserDataForUser,
-    isSupabaseConfigured
-  ]);
+      } else { setIsLoading(false); }
+    } else if (!appState.isAuthenticated) { setIsLoading(false); }
+  }, [appState.isAuthenticated, appState.currentUser, appState.currentUsername, appState.data, appState.settings, loadAllUserDataForUser, isSupabaseConfigured]);
 
   const login = useCallback(async (usernameInput: string, passwordInput: string): Promise<boolean> => {
-    if (!supabase || !isSupabaseConfigured) {
-      setError(SUPABASE_CONFIG_ERROR_MESSAGE);
-      setIsLoading(false);
-      return false;
-    }
-    setIsLoading(true);
-    clearError();
-    const username = usernameInput.trim().toLowerCase();
-    const password = passwordInput.trim();
-
+    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsLoading(false); return false; }
+    setIsLoading(true); clearError();
+    const username = usernameInput.trim().toLowerCase(); const password = passwordInput.trim();
     try {
-      console.log(`Tentando login para usuário: ${username}`);
       const { data: userData, error: fetchUserError } = await supabase
-        .from('users')
-        .select('id, username, password_hash')
-        .eq('username', username)
-        .maybeSingle(); 
-
+        .from('financas_users').select('id, username, password_hash').eq('username', username).maybeSingle(); 
       if (fetchUserError) {
-        const baseUiMessage = "Erro ao conectar com o banco de dados";
-        let finalUiMessage = baseUiMessage;
-        console.error(
-            `${baseUiMessage}. Supabase error code: ${fetchUserError.code}, message: ${fetchUserError.message}, details: ${fetchUserError.details}, hint: ${fetchUserError.hint}`
-        );
-
-        if (fetchUserError.message && typeof fetchUserError.message === 'string' && fetchUserError.message.trim() !== "") {
-          finalUiMessage = `${baseUiMessage}. Detalhe: ${fetchUserError.message}. (Verifique o console para código do erro)`;
-        } else {
-          finalUiMessage = `${baseUiMessage}. Verifique o console para mais informações. (Código: ${fetchUserError.code || 'N/A'})`;
-        }
-        setError(finalUiMessage);
-        setIsLoading(false);
-        return false;
+        setError(`Erro ao conectar: ${fetchUserError.message} (Código: ${fetchUserError.code || 'N/A'})`);
+        setIsLoading(false); return false;
       }
-      
-      if (!userData) { 
-        console.warn(`Usuário '${username}' não encontrado no banco de dados. Verifique a capitalização e a existência do nome de usuário no Supabase.`);
-        setError('Usuário não encontrado ou senha inválida.'); 
-        setIsLoading(false);
-        return false;
-      }
-      
-      console.log(`Usuário ${username} encontrado. Verificando senha...`);
+      if (!userData) { setError('Usuário não encontrado ou senha inválida.'); setIsLoading(false); return false; }
       if (userData.password_hash === password) {
-        console.log(`Senha correta para ${username}. Login bem-sucedido.`);
         const expiryTime = Date.now() + SESSION_DURATION;
         localStorage.setItem(LOCAL_STORAGE_USER_ID, userData.id);
         localStorage.setItem(LOCAL_STORAGE_USERNAME, userData.username); 
         localStorage.setItem(LOCAL_STORAGE_SESSION_EXPIRY, expiryTime.toString());
-
-        setAppState(prevState => ({ 
-          ...defaultInitialAppState, 
-          isAuthenticated: true,
-          currentUser: userData.id,
-          currentUsername: userData.username,
-        }));
+        setAppState(prevState => ({ ...defaultInitialAppState, isAuthenticated: true, currentUser: userData.id, currentUsername: userData.username }));
         return true;
-      } else {
-        console.warn(
-          `Senha inválida para o usuário: ${username}. ` +
-          `Senha Fornecida: "${password}", Senha Esperada (Hash no DB): "${userData.password_hash}". ` +
-          `Verifique o valor exato do password_hash no Supabase.`
-        );
-        setError('Usuário não encontrado ou senha inválida.'); 
-        setIsLoading(false);
-        return false;
-      }
+      } else { setError('Usuário não encontrado ou senha inválida.'); setIsLoading(false); return false; }
     } catch (err: any) {
-      const baseUiMessage = "Erro inesperado durante o login";
-      let finalUiMessage = baseUiMessage;
-
-      console.error(`${baseUiMessage} (raw object):`, err);
-      if (err.code) console.error(`Supabase error code: ${err.code}`);
-      if (err.details) console.error(`Supabase error details: ${err.details}`);
-      if (err.hint) console.error(`Supabase error hint: ${err.hint}`);
-
-      if (err.message && typeof err.message === 'string' && err.message.trim() !== "") {
-        finalUiMessage = `${baseUiMessage}. Detalhes: ${err.message}. (Verifique o console)`;
-      } else {
-        finalUiMessage = `${baseUiMessage}. Verifique o console para mais informações.`;
-      }
-      
-      setError(finalUiMessage);
-      setIsLoading(false);
-      return false;
+      setError(`Erro inesperado no login: ${err.message || 'Verifique o console.'}`);
+      setIsLoading(false); return false;
     }
   }, [isSupabaseConfigured]); 
 
   const logout = useCallback(() => {
-    console.log("Iniciando processo de logout.");
-    localStorage.removeItem(LOCAL_STORAGE_USER_ID);
-    localStorage.removeItem(LOCAL_STORAGE_USERNAME);
-    localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
-    setAppState(defaultInitialAppState); 
-    setIsLoading(false); 
-    setError(''); 
-    console.log("Usuário deslogado, sessão limpa. Estado resetado.");
+    localStorage.removeItem(LOCAL_STORAGE_USER_ID); localStorage.removeItem(LOCAL_STORAGE_USERNAME); localStorage.removeItem(LOCAL_STORAGE_SESSION_EXPIRY);
+    setAppState(defaultInitialAppState); setIsLoading(false); setError(''); 
   }, []);
   
   const getOrCreateLocalMonthData = useCallback((monthYear: string, currentData: Record<string, MonthData>, userId: string): MonthData => {
-    if (currentData[monthYear]) {
-      return currentData[monthYear];
-    }
+    if (currentData[monthYear]) return currentData[monthYear];
     return createEmptyMonthDataStructure(monthYear, userId);
   }, []);
 
   const addTransaction = useCallback(async (
     monthYear: string, 
-    periodType: PeriodType, 
-    transactionData: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at'>
+    periodTypeForTagging: PeriodType,
+    transactionData: Omit<Transaction, 'id' | 'month_data_id' | 'user_id' | 'created_at' | 'updated_at' | 'period_type'> & { period_type?: PeriodType }
   ) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
     if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
@@ -533,35 +381,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...transactionData,
         month_data_id: monthDataId,
         user_id: appState.currentUser,
-        period_type: periodType,
+        period_type: transactionData.period_type || periodTypeForTagging, 
       };
 
       const { data: newTransaction, error } = await supabase
-        .from('transactions')
-        .insert(transactionToInsert)
-        .select()
-        .single();
+        .from('financas_transactions').insert(transactionToInsert).select().single();
 
       if (error || !newTransaction) throw error || new Error("Falha ao adicionar transação no Supabase.");
 
       setAppState(prevState => {
         const MData = getOrCreateLocalMonthData(monthYear, prevState.data, appState.currentUser!);
-        const updatedPeriodTransactions = [...MData[periodType].transactions, newTransaction as Transaction]
-            .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const updatedTransactions = [...MData.transactions, newTransaction as Transaction]
+            .sort((a,b) => new Date(b.date + "T00:00:00").getTime() - new Date(a.date + "T00:00:00").getTime());
         
         const updatedMonthObject: MonthData = {
           ...MData,
           id: MData.id || monthDataId, 
-          [periodType]: { transactions: updatedPeriodTransactions }
+          transactions: updatedTransactions
         };
-
-        return {
-          ...prevState,
-          data: { ...prevState.data, [monthYear]: updatedMonthObject },
-        };
+        return { ...prevState, data: { ...prevState.data, [monthYear]: updatedMonthObject } };
       });
     } catch (err: any) {
-      console.error("Error adding transaction:", err);
       setError(`Falha ao adicionar transação: ${err.message}`);
     } finally {
       setIsSaving(false);
@@ -574,35 +414,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsSaving(true); clearError();
     try {
       const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', transactionId)
-        .eq('user_id', appState.currentUser); 
-
+        .from('financas_transactions').delete().eq('id', transactionId).eq('user_id', appState.currentUser); 
       if (error) throw error;
 
       setAppState(prevState => {
         const newData = { ...prevState.data };
         for (const monthYearKey in newData) {
           const monthData = newData[monthYearKey];
-          let transactionFoundAndRemoved = false;
-          
-          const midMonthTransactions = monthData.midMonth.transactions.filter(t => t.id !== transactionId);
-          if (midMonthTransactions.length < monthData.midMonth.transactions.length) transactionFoundAndRemoved = true;
-          monthData.midMonth.transactions = midMonthTransactions;
-
-          if(!transactionFoundAndRemoved){
-            const endOfMonthTransactions = monthData.endOfMonth.transactions.filter(t => t.id !== transactionId);
-            if (endOfMonthTransactions.length < monthData.endOfMonth.transactions.length) transactionFoundAndRemoved = true;
-            monthData.endOfMonth.transactions = endOfMonthTransactions;
-          }
-          
-          if (transactionFoundAndRemoved) break; 
+          const initialLength = monthData.transactions.length;
+          monthData.transactions = monthData.transactions.filter(t => t.id !== transactionId);
+          if (monthData.transactions.length < initialLength) break; 
         }
         return { ...prevState, data: newData };
       });
     } catch (err: any) {
-      console.error("Error deleting transaction:", err);
       setError(`Falha ao excluir transação: ${err.message}`);
     } finally {
       setIsSaving(false);
@@ -618,40 +443,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { id, month_data_id, user_id, created_at, updated_at, ...updatePayload } = updatedTransactionData;
       
       const { data: newTransaction, error } = await supabase
-        .from('transactions')
-        .update(updatePayload)
-        .eq('id', id)
-        .eq('user_id', appState.currentUser) 
-        .select()
-        .single();
-
+        .from('financas_transactions').update(updatePayload).eq('id', id)
+        .eq('user_id', appState.currentUser).select().single();
       if (error || !newTransaction) throw error || new Error("Falha ao atualizar transação no Supabase.");
       
       setAppState(prevState => {
         const newData = { ...prevState.data };
-        let found = false;
         for (const monthYearKey in newData) {
           const currentMonthEntry = newData[monthYearKey];
-          
-          const updatePeriod = (period: FinancialPeriodData) => {
-            const index = period.transactions.findIndex(t => t.id === newTransaction.id);
-            if (index !== -1) {
-              period.transactions[index] = newTransaction as Transaction;
-              period.transactions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-              found = true;
-            }
-          };
-          
-          updatePeriod(currentMonthEntry.midMonth);
-          if (found) break;
-          updatePeriod(currentMonthEntry.endOfMonth);
-          if (found) break;
+          const index = currentMonthEntry.transactions.findIndex(t => t.id === newTransaction.id);
+          if (index !== -1) {
+            currentMonthEntry.transactions[index] = newTransaction as Transaction;
+            currentMonthEntry.transactions.sort((a,b) => new Date(b.date + "T00:00:00").getTime() - new Date(a.date + "T00:00:00").getTime());
+            break; 
+          }
         }
         return { ...prevState, data: newData };
       });
-
     } catch (err: any) {
-      console.error("Error updating transaction:", err);
       setError(`Falha ao atualizar transação: ${err.message}`);
     } finally {
       setIsSaving(false);
@@ -660,96 +469,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateSettings = useCallback(async (newSettings: Partial<Omit<AppSettings, 'user_id'>>) => {
     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
-    if (!appState.currentUser || !appState.settings) { setError("Usuário não autenticado ou configurações não carregadas."); setIsSaving(false); return; }
+    if (!appState.currentUser || !appState.settings) { setError("Usuário ou config não carregados."); setIsSaving(false); return; }
     setIsSaving(true); clearError();
     try {
-      const settingsToUpdate = { 
-        ...appState.settings, 
-        ...newSettings,      
-        user_id: appState.currentUser 
+      const payload = { 
+        currencysymbol: newSettings.currencySymbol ?? appState.settings.currencySymbol, // use lowercase for Supabase
+        usernamedisplay: newSettings.userNameDisplay ?? appState.settings.userNameDisplay, // use lowercase for Supabase
+        theme: newSettings.theme ?? appState.settings.theme,
       };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { user_id, ...payload } = settingsToUpdate; 
-
-      const { data: updatedSettingsData, error } = await supabase
-        .from('settings')
-        .update(payload)
-        .eq('user_id', appState.currentUser)
-        .select()
-        .single();
-
-      if (error || !updatedSettingsData) throw error || new Error("Falha ao atualizar configurações no Supabase.");
-
-      setAppState(prevState => ({
-        ...prevState,
-        settings: updatedSettingsData as AppSettings,
-      }));
+      const { data: updatedRawSettings, error } = await supabase
+        .from('financas_settings').update(payload).eq('user_id', appState.currentUser)
+        .select('user_id, currencysymbol, usernamedisplay, theme').single();
+      if (error || !updatedRawSettings) throw error || new Error("Falha ao atualizar config no Supabase.");
+      const updatedAppSettings = mapRawSettingsToAppSettings(updatedRawSettings);
+      if (updatedAppSettings) setAppState(prevState => ({ ...prevState, settings: updatedAppSettings }));
+      else throw new Error("Falha ao mapear config atualizada.");
     } catch (err: any) {
-        const baseUiMessage = "Erro ao atualizar configurações";
-        let finalUiMessage = baseUiMessage;
-
-        const errorProperties = ['message', 'code', 'details', 'hint'];
-        const allErrorKeys = Object.getOwnPropertyNames(err).concat(errorProperties.filter(p => err[p] !== undefined));
-        console.error(`${baseUiMessage}. Erro completo:`, JSON.stringify(err, Array.from(new Set(allErrorKeys)), 2));
-        
-        let parts = [baseUiMessage];
-        if (err.message && typeof err.message === 'string' && err.message.trim() !== "") parts.push(`Detalhe: ${err.message.trim()}`);
-        
-        if (err.code && typeof err.code === 'string' && err.code.trim() !== "") parts.push(`Código: ${err.code.trim()}`);
-        else if (err.code) parts.push(`Código: ${String(err.code)}`); 
-
-        if (err.details && typeof err.details === 'string' && err.details.trim() !== "") parts.push(`Info: ${err.details.trim()}`);
-        if (err.hint && typeof err.hint === 'string' && err.hint.trim() !== "") parts.push(`Dica: ${err.hint.trim()}`);
-        
-        finalUiMessage = parts.join('. ') + ". Tente novamente ou contate o suporte se o problema persistir.";
-        setError(finalUiMessage);
+      setError(`Erro ao atualizar config: ${err.message}`);
     } finally {
       setIsSaving(false);
     }
   }, [appState.currentUser, appState.settings, isSupabaseConfigured]); 
 
-  const updateMonthData = useCallback(async (monthYear: string, dataToUpdate: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit'>>) => {
-     if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
+  const updateMonthData = useCallback(async (monthYear: string, dataToUpdate: Partial<Pick<MonthData, 'openingBalance' | 'creditCardLimit' | 'midMonthSpendingGoal' | 'midMonthSavingsGoal' | 'endOfMonthSpendingGoal' | 'endOfMonthSavingsGoal' | 'monthlyOverallSpendingGoal' | 'categorySpendingGoals'>>) => {
+    if (!supabase || !isSupabaseConfigured) { setError(SUPABASE_CONFIG_ERROR_MESSAGE); setIsSaving(false); return; }
     if (!appState.currentUser) { setError("Usuário não autenticado."); setIsSaving(false); return; }
     setIsSaving(true); clearError();
     try {
       const monthRecordId = await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear);
+      const dbPayload: any = {};
+      if (dataToUpdate.openingBalance !== undefined) dbPayload.opening_balance = dataToUpdate.openingBalance;
+      if (dataToUpdate.creditCardLimit !== undefined) dbPayload.credit_card_limit = dataToUpdate.creditCardLimit;
+      if (dataToUpdate.midMonthSpendingGoal !== undefined) dbPayload.mid_month_spending_goal = dataToUpdate.midMonthSpendingGoal;
+      if (dataToUpdate.midMonthSavingsGoal !== undefined) dbPayload.mid_month_savings_goal = dataToUpdate.midMonthSavingsGoal;
+      if (dataToUpdate.endOfMonthSpendingGoal !== undefined) dbPayload.end_of_month_spending_goal = dataToUpdate.endOfMonthSpendingGoal;
+      if (dataToUpdate.endOfMonthSavingsGoal !== undefined) dbPayload.end_of_month_savings_goal = dataToUpdate.endOfMonthSavingsGoal;
+      if (dataToUpdate.monthlyOverallSpendingGoal !== undefined) dbPayload.monthly_overall_spending_goal = dataToUpdate.monthlyOverallSpendingGoal;
+      if (dataToUpdate.categorySpendingGoals !== undefined) dbPayload.category_spending_goals = dataToUpdate.categorySpendingGoals;
+
+
+      if (Object.keys(dbPayload).length === 0) { setIsSaving(false); return; }
       
       const { error } = await supabase
-        .from('months_data')
-        .update(dataToUpdate)
-        .eq('id', monthRecordId)
-        .eq('user_id', appState.currentUser);
-
+        .from('financas_months_data').update(dbPayload).eq('id', monthRecordId).eq('user_id', appState.currentUser);
       if (error) throw error;
 
       setAppState(prevState => {
         const MData = getOrCreateLocalMonthData(monthYear, prevState.data, appState.currentUser!);
         const updatedMonthObject = { ...MData, id: MData.id || monthRecordId, ...dataToUpdate };
-        return {
-          ...prevState,
-          data: { ...prevState.data, [monthYear]: updatedMonthObject },
-        };
+        return { ...prevState, data: { ...prevState.data, [monthYear]: updatedMonthObject } };
       });
     } catch (err: any) {
-        const baseUiMessage = "Erro ao atualizar dados do mês";
-        let finalUiMessage = baseUiMessage;
-
-        const errorProperties = ['message', 'code', 'details', 'hint'];
-        const allErrorKeys = Object.getOwnPropertyNames(err).concat(errorProperties.filter(p => err[p] !== undefined));
-        console.error(`${baseUiMessage}. Erro completo:`, JSON.stringify(err, Array.from(new Set(allErrorKeys)), 2));
-        
-        let parts = [baseUiMessage];
-        if (err.message && typeof err.message === 'string' && err.message.trim() !== "") parts.push(`Detalhe: ${err.message.trim()}`);
-        
-        if (err.code && typeof err.code === 'string' && err.code.trim() !== "") parts.push(`Código: ${err.code.trim()}`);
-        else if (err.code) parts.push(`Código: ${String(err.code)}`); 
-
-        if (err.details && typeof err.details === 'string' && err.details.trim() !== "") parts.push(`Info: ${err.details.trim()}`);
-        if (err.hint && typeof err.hint === 'string' && err.hint.trim() !== "") parts.push(`Dica: ${err.hint.trim()}`);
-        
-        finalUiMessage = parts.join('. ') + ". Tente novamente ou contate o suporte se o problema persistir.";
-        setError(finalUiMessage);
+      setError(`Erro ao atualizar dados do mês: ${err.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -769,33 +540,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setIsSaving(true); clearError();
     try {
-      let { data: existingActiveMonth, error: fetchActiveError } = await supabase
-        .from('active_months')
-        .select('user_id')
-        .eq('user_id', appState.currentUser)
-        .maybeSingle();
-
-      if (fetchActiveError) throw fetchActiveError;
-
+      let { data: existingActiveMonth } = await supabase
+        .from('financas_active_months').select('user_id').eq('user_id', appState.currentUser).maybeSingle();
       if (existingActiveMonth) {
         const { error: updateError } = await supabase
-          .from('active_months')
-          .update({ active_month_year: monthYear })
-          .eq('user_id', appState.currentUser);
+          .from('financas_active_months').update({ active_month_year: monthYear }).eq('user_id', appState.currentUser);
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
-          .from('active_months')
-          .insert({ user_id: appState.currentUser, active_month_year: monthYear });
+          .from('financas_active_months').insert({ user_id: appState.currentUser, active_month_year: monthYear });
         if (insertError) throw insertError;
       }
-      
       if (!appState.data[monthYear]?.id && appState.currentUser) {
          await getOrCreateSupabaseMonthRecord(appState.currentUser, monthYear); 
       }
-
     } catch (err:any) {
-        console.error("Error setting active month in Supabase:", err);
         setError(`Falha ao definir mês ativo no servidor: ${err.message}`);
     } finally {
       setIsSaving(false);
@@ -814,82 +573,125 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const getTransactionsForPeriod = useCallback((monthYear: string, periodType: PeriodType, transactionTypeParam?: TransactionType): Transaction[] => {
     const monthData = appState.data[monthYear];
-    if (!monthData || !monthData[periodType]) return [];
+    if (!monthData || !monthData.transactions) return [];
     
-    const transactions = monthData[periodType].transactions || [];
+    let filteredTransactions = monthData.transactions.filter(t => {
+      if (!t.date || t.date.split('-').length !== 3) {
+        console.warn('Invalid date format for transaction:', t);
+        return false; 
+      }
+      // Direct parsing of day from YYYY-MM-DD string
+      const dayOfMonth = parseInt(t.date.substring(t.date.lastIndexOf('-') + 1), 10);
+
+      if (periodType === PeriodType.MID_MONTH) {
+        return dayOfMonth <= 15;
+      } else { // END_OF_MONTH
+        return dayOfMonth > 15;
+      }
+    });
+
     if (transactionTypeParam) {
-      return transactions.filter(t => t.type === transactionTypeParam);
+      filteredTransactions = filteredTransactions.filter(t => t.type === transactionTypeParam);
     }
-    return transactions;
+    return [...filteredTransactions].sort((a,b) => new Date(b.date + "T00:00:00").getTime() - new Date(a.date + "T00:00:00").getTime());
   }, [appState.data]);
 
   const getAllTransactionsForMonth = useCallback((monthYear: string, transactionTypeParam?: TransactionType): Transaction[] => {
     const monthData = appState.data[monthYear];
-    if (!monthData) return [];
+    if (!monthData || !monthData.transactions) return [];
     
-    let transactions = [
-      ...(monthData.midMonth?.transactions || []),
-      ...(monthData.endOfMonth?.transactions || []),
-    ];
+    let transactions = monthData.transactions;
     
     if (transactionTypeParam) {
       transactions = transactions.filter(t => t.type === transactionTypeParam);
     }
-    return transactions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()); 
+    return [...transactions].sort((a,b) => new Date(b.date + "T00:00:00").getTime() - new Date(a.date + "T00:00:00").getTime()); 
   }, [appState.data]);
 
   const getMonthlySummary = useCallback((monthYear: string) => {
     const monthDataToUse = appState.data[monthYear] || createEmptyMonthDataStructure(monthYear, appState.currentUser || undefined);
-    
     const allIncome = getAllTransactionsForMonth(monthYear, TransactionType.INCOME);
     const allExpenses = getAllTransactionsForMonth(monthYear, TransactionType.EXPENSE);
-
     const totalIncome = allIncome.reduce((sum, t: Transaction) => sum + t.amount, 0);
     const totalExpenses = allExpenses.reduce((sum, t: Transaction) => sum + t.amount, 0);
     const netSavings = totalIncome - totalExpenses;
     const accountBalance = (monthDataToUse.openingBalance || 0) + netSavings;
-
-    const creditCardSpent = allExpenses
-      .filter((t: Transaction) => t.category === "Cartão de Crédito")
-      .reduce((sum, t: Transaction) => sum + t.amount, 0);
-    
-    const creditCardRemainingLimit = monthDataToUse.creditCardLimit !== undefined && monthDataToUse.creditCardLimit !== null
-      ? monthDataToUse.creditCardLimit - creditCardSpent 
-      : undefined;
-
-    const totalBenefits = allIncome
-      .filter((t: Transaction) => BENEFIT_CATEGORIES.includes(t.category))
-      .reduce((sum, t: Transaction) => sum + t.amount, 0);
-
-    return {
-      totalIncome,
-      totalExpenses,
-      netSavings,
-      accountBalance,
-      creditCardSpent,
-      creditCardRemainingLimit,
-      totalBenefits,
-    };
+    const creditCardSpent = allExpenses.filter((t: Transaction) => t.category === "Cartão de Crédito").reduce((sum, t: Transaction) => sum + t.amount, 0);
+    const creditCardRemainingLimit = monthDataToUse.creditCardLimit !== undefined && monthDataToUse.creditCardLimit !== null ? monthDataToUse.creditCardLimit - creditCardSpent : undefined;
+    const totalBenefits = allIncome.filter((t: Transaction) => BENEFIT_CATEGORIES.includes(t.category)).reduce((sum, t: Transaction) => sum + t.amount, 0);
+    return { totalIncome, totalExpenses, netSavings, accountBalance, creditCardSpent, creditCardRemainingLimit, totalBenefits };
   }, [appState.data, appState.currentUser, getAllTransactionsForMonth]);
+
+
+  const getPeriodSummary = useCallback((monthYear: string, periodType: PeriodType) => {
+    const periodTransactions = getTransactionsForPeriod(monthYear, periodType);
+    const periodIncome = periodTransactions.filter(t => t.type === TransactionType.INCOME).reduce((sum, t) => sum + t.amount, 0);
+    const periodExpenses = periodTransactions.filter(t => t.type === TransactionType.EXPENSE).reduce((sum, t) => sum + t.amount, 0);
+    const periodSavings = periodIncome - periodExpenses;
+    return { periodIncome, periodExpenses, periodSavings };
+  }, [getTransactionsForPeriod]);
+
+  const getCategorySpendingDetails = useCallback((monthYear: string): CategorySpendingDetail[] => {
+    const monthData = appState.data[monthYear];
+    if (!monthData) return [];
+
+    const categoryTotals: Record<string, number> = {};
+    monthData.transactions
+      .filter(t => t.type === TransactionType.EXPENSE)
+      .forEach(t => {
+        categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+      });
+
+    const details: CategorySpendingDetail[] = [];
+    const categoryGoals = monthData.categorySpendingGoals || {};
+
+    // Iterate over defined expense categories to maintain a consistent order if desired,
+    // or iterate over keys of categoryTotals or categoryGoals
+    EXPENSE_CATEGORIES.forEach(category => {
+      const totalSpent = categoryTotals[category] || 0;
+      const goal = categoryGoals[category] || 0; // Default goal to 0 if not set
+
+      if (totalSpent > 0 || goal > 0) { // Only include categories with spending or a set goal
+        const percentage = goal > 0 ? Math.min((totalSpent / goal) * 100, 200) : (totalSpent > 0 ? 100 : 0); // Cap at 200% for display
+        details.push({
+          category,
+          totalSpent,
+          goal,
+          percentage,
+        });
+      }
+    });
+    // Add any categories with goals but no spending yet (or vice-versa not covered by EXPENSE_CATEGORIES if goals can be for other cats)
+    Object.keys(categoryGoals).forEach(category => {
+        if (!EXPENSE_CATEGORIES.includes(category) && (categoryGoals[category] || 0) > 0) {
+            const totalSpent = categoryTotals[category] || 0;
+            const goal = categoryGoals[category] || 0;
+            const percentage = goal > 0 ? Math.min((totalSpent / goal) * 100, 200) : (totalSpent > 0 ? 100 : 0);
+            if (!details.find(d => d.category === category)) {
+                 details.push({ category, totalSpent, goal, percentage });
+            }
+        }
+    });
+     Object.keys(categoryTotals).forEach(category => {
+        if (!EXPENSE_CATEGORIES.includes(category) && !categoryGoals[category] && categoryTotals[category] > 0) {
+             if (!details.find(d => d.category === category)) {
+                details.push({ category, totalSpent: categoryTotals[category], goal: 0, percentage: 100 });
+            }
+        }
+    });
+
+
+    return details.sort((a,b) => (b.goal > 0 ? b.totalSpent/b.goal : b.totalSpent) - (a.goal > 0 ? a.totalSpent/a.goal : a.totalSpent)); // Sort by most overspent or highest %
+  }, [appState.data]);
 
   return (
     <AppContext.Provider value={{ 
-      ...appState,
-      isLoading,
-      isSaving,
-      error, 
-      addTransaction, 
-      deleteTransaction, 
-      updateTransaction, 
-      updateSettings,
-      updateMonthData,
-      setActiveMonthYear,
-      getCurrentMonthData,
-      getTransactionsForPeriod,
-      getAllTransactionsForMonth,
-      getMonthlySummary,
-      login,
-      logout,
+      ...appState, isLoading, isSaving, error, 
+      addTransaction, deleteTransaction, updateTransaction, 
+      updateSettings, updateMonthData, setActiveMonthYear,
+      getCurrentMonthData, getTransactionsForPeriod, getAllTransactionsForMonth,
+      getMonthlySummary, getPeriodSummary, getCategorySpendingDetails,
+      login, logout,
     }}>
       {children}
     </AppContext.Provider>

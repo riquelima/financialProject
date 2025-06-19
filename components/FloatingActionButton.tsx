@@ -13,15 +13,14 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onClick, ic
     <button
       onClick={onClick}
       aria-label={ariaLabel}
-      className="fixed bottom-24 md:bottom-6 right-6 text-[var(--ref-white)] p-4 rounded-2xl shadow-lg focus:outline-none focus:ring-4 focus:ring-[var(--ref-blue-vibrant)]/30 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 z-40 flex items-center space-x-2"
+      className="fixed bottom-24 md:bottom-6 right-6 text-white p-4 rounded-full shadow-xl focus:outline-none focus:ring-4 focus:ring-[var(--amethyst-purple)]/50 transition-all duration-300 ease-in-out transform hover:scale-110 active:scale-95 z-40 flex items-center space-x-2"
       style={{ 
-        backgroundColor: 'var(--ref-blue-vibrant)',
-        // animation: 'fabPulse 2s infinite ease-in-out' // Pulse might be distracting with new theme
-        boxShadow: '0px 4px 12px rgba(99, 102, 241, 0.4)' // Custom shadow for blue button
+        background: 'linear-gradient(135deg, var(--emerald-lime), var(--amethyst-purple))',
+        animation: 'fabPulse 2s infinite ease-in-out'
       }}
     >
       {icon || <PlusIcon className="w-7 h-7" />}
-      {label && <span className="font-semibold text-sm">{label}</span>} {/* Poppins Semibold */}
+      {label && <span className="font-semibold text-sm">{label}</span>}
     </button>
   );
 };
