@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusIcon } from '../constants';
+import { PlusIcon } from '../constants.js';
 
 interface FloatingActionButtonProps {
   onClick: () => void;

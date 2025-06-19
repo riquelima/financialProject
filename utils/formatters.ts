@@ -1,4 +1,4 @@
-import { MONTH_NAMES } from '../constants';
+import { MONTH_NAMES } from '../constants.js';
 
 export const formatCurrency = (amount: number, currencySymbol: string = 'R$'): string => {
   return `${currencySymbol} ${amount.toFixed(2).replace('.', ',')}`;

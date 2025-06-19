@@ -1,7 +1,7 @@
 import React from 'react';
-import { useAppContext } from '../hooks/useAppContext';
-import { getMonthName, formatCurrency } from '../utils/formatters';
-import { BarChart2Icon, TrendingUpIcon, COLORS } from '../constants'; 
+import { useAppContext } from '../hooks/useAppContext.js';
+import { getMonthName, formatCurrency } from '../utils/formatters.js';
+import { BarChart2Icon, TrendingUpIcon, COLORS } from '../constants.js'; 
 
 const HistoryScreen: React.FC = () => {
   const { data, settings, getMonthlySummary, setActiveMonthYear } = useAppContext();

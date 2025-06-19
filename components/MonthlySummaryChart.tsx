@@ -1,9 +1,8 @@
 
 
-
 import React from 'react';
-import { formatCurrency } from '../utils/formatters';
-import { COLORS, BarChart2Icon } from '../constants'; 
+import { formatCurrency } from '../utils/formatters.js';
+import { COLORS, BarChart2Icon } from '../constants.js'; 
 
 interface MonthlySummaryChartProps {
   summary: {

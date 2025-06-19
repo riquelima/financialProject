@@ -1,8 +1,6 @@
 {
   "name": "Controle Financeiro v3",
   "description": "Um aplicativo web para controle financeiro pessoal, permitindo inserção manual de dados, histórico mensal e resumos visuais.",
-  "requestFramePermissions": [
-    "camera"
-  ],
+  "requestFramePermissions": [],
   "prompt": ""
 }

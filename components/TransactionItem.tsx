@@ -1,8 +1,8 @@
 import React from 'react';
-import { Transaction, TransactionType } from '../types';
-import { useAppContext } from '../hooks/useAppContext';
-import { formatCurrency, formatDate } from '../utils/formatters';
-import { Trash2Icon, Edit3Icon, COLORS } from '../constants';
+import { Transaction, TransactionType } from '../types.js';
+import { useAppContext } from '../hooks/useAppContext.js';
+import { formatCurrency, formatDate } from '../utils/formatters.js';
+import { Trash2Icon, Edit3Icon, COLORS } from '../constants.js';
 
 interface TransactionItemProps {
   transaction: Transaction;

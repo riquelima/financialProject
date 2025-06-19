@@ -1,8 +1,8 @@
 import React from 'react';
-import Modal from './Modal';
-import { Transaction, TransactionType } from '../types';
-import { formatCurrency, formatDate } from '../utils/formatters';
-import { COLORS, Edit3Icon, Trash2Icon } from '../constants';
+import Modal from './Modal.js';
+import { Transaction, TransactionType } from '../types.js';
+import { formatCurrency, formatDate } from '../utils/formatters.js';
+import { COLORS, Edit3Icon, Trash2Icon } from '../constants.js';
 
 interface TransactionListModalProps {
   isOpen: boolean;

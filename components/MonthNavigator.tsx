@@ -1,7 +1,7 @@
 import React from 'react';
-import { useAppContext } from '../hooks/useAppContext';
-import { getMonthName, addMonths } from '../utils/formatters';
-import { ChevronLeftIcon, ChevronRightIcon } from '../constants';
+import { useAppContext } from '../hooks/useAppContext.js';
+import { getMonthName, addMonths } from '../utils/formatters.js';
+import { ChevronLeftIcon, ChevronRightIcon } from '../constants.js';
 
 interface MonthNavigatorProps {
   className?: string;

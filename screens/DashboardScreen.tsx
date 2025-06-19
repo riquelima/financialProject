@@ -1,18 +1,18 @@
 
 import React, { useState, useMemo } from 'react';
-import { useAppContext } from '../hooks/useAppContext';
-import { formatCurrency, getMonthName } from '../utils/formatters';
-import SummaryCard from '../components/SummaryCard';
-import MonthNavigator from '../components/MonthNavigator';
-import FloatingActionButton from '../components/FloatingActionButton';
-import AddTransactionModal from '../components/AddTransactionModal';
-import TransactionListModal from '../components/TransactionListModal';
-import ExpensePieChart from '../components/ExpensePieChart';
-import MonthlySummaryChart from '../components/MonthlySummaryChart';
+import { useAppContext } from '../hooks/useAppContext.js';
+import { formatCurrency, getMonthName } from '../utils/formatters.js';
+import SummaryCard from '../components/SummaryCard.js';
+import MonthNavigator from '../components/MonthNavigator.js';
+import FloatingActionButton from '../components/FloatingActionButton.js';
+import AddTransactionModal from '../components/AddTransactionModal.js';
+import TransactionListModal from '../components/TransactionListModal.js';
+import ExpensePieChart from '../components/ExpensePieChart.js';
+import MonthlySummaryChart from '../components/MonthlySummaryChart.js';
 // import AiChatFab from '../components/AiChatFab'; // Removed import
-import AiChatModal from '../components/AiChatModal';
-import { PeriodType, Transaction, TransactionType } from '../types';
-import { DollarSignIcon, TrendingUpIcon, BarChart2Icon, PieChartIcon, COLORS } from '../constants';
+import AiChatModal from '../components/AiChatModal.js';
+import { PeriodType, Transaction, TransactionType } from '../types.js';
+import { DollarSignIcon, TrendingUpIcon, BarChart2Icon, PieChartIcon, COLORS } from '../constants.js';
 
 const DashboardScreen: React.FC = () => {
   const {

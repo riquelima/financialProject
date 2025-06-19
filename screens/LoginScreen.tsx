@@ -1,9 +1,8 @@
 
 
-
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../hooks/useAppContext';
-import { APP_NAME, DollarSignIcon } from '../constants'; 
+import { useAppContext } from '../hooks/useAppContext.js';
+import { APP_NAME, DollarSignIcon } from '../constants.js'; 
 
 const LoginScreen: React.FC = () => {
   const { login, error: contextError, isLoading } = useAppContext(); 

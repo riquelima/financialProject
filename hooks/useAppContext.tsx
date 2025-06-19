@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, BENEFIT_CATEGORIES, EXPENSE_CATEGORIES, CategorySpendingDetail } from '../types';
-import { getCurrentMonthYear } from '../utils/formatters'; 
+import { AppState, AppContextType, MonthData, Transaction, PeriodType, TransactionType, AppSettings, User, BENEFIT_CATEGORIES, EXPENSE_CATEGORIES, CategorySpendingDetail } from '../types.js';
+import { getCurrentMonthYear } from '../utils/formatters.js'; 
 
 // Supabase Client Initialization
 const YOUR_SUPABASE_URL_HERE: string = 'https://kwvqumyzkezzatuhqoda.supabase.co'; 

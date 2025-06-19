@@ -1,16 +1,15 @@
 
-
 import React, { useMemo } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { useAppContext } from './hooks/useAppContext'; 
-import { HomeIcon, CalendarIcon, BarChart2Icon, CogIcon, COLORS, AlertTriangleIcon, CheckCircleIcon } from './constants';
-import DashboardScreen from './screens/DashboardScreen';
-import FinancialPeriodScreen from './screens/FinancialPeriodScreen';
-import HistoryScreen from './screens/HistoryScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import LoginScreen from './screens/LoginScreen';
-import MonthlyAnalysisScreen from './screens/MonthlyAnalysisScreen'; // Import the new screen
-import { PeriodType } from './types';
+import { useAppContext } from './hooks/useAppContext.js'; 
+import { HomeIcon, CalendarIcon, BarChart2Icon, CogIcon, COLORS, AlertTriangleIcon, CheckCircleIcon } from './constants.js';
+import DashboardScreen from './screens/DashboardScreen.js';
+import FinancialPeriodScreen from './screens/FinancialPeriodScreen.js';
+import HistoryScreen from './screens/HistoryScreen.js';
+import SettingsScreen from './screens/SettingsScreen.js';
+import LoginScreen from './screens/LoginScreen.js';
+import MonthlyAnalysisScreen from './screens/MonthlyAnalysisScreen.js'; // Import the new screen
+import { PeriodType } from './types.js';
 
 const baseNavLinks = [
   { to: "/", icon: HomeIcon, label: "Dashboard" },

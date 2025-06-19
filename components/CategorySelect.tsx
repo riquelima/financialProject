@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDownIcon } from '../constants'; // Removed COLORS import as it's not directly used for bg/text here
+import { ChevronDownIcon } from '../constants.js'; // Removed COLORS import as it's not directly used for bg/text here
 
 interface CategorySelectProps {
   categories: string[];

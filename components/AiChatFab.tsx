@@ -1,5 +1,5 @@
 import React from 'react';
-import { RobotIcon, COLORS } from '../constants';
+import { RobotIcon, COLORS } from '../constants.js';
 
 interface AiChatFabProps {
   onClick: () => void;

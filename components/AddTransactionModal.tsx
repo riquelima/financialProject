@@ -1,12 +1,10 @@
 
-
-
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
-import { useAppContext } from '../hooks/useAppContext'; 
-import { Transaction, TransactionType, PeriodType, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types';
-import CategorySelect from './CategorySelect';
-import { formatDate } from '../utils/formatters';
+import Modal from './Modal.js';
+import { useAppContext } from '../hooks/useAppContext.js'; 
+import { Transaction, TransactionType, PeriodType, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types.js';
+import CategorySelect from './CategorySelect.js';
+import { formatDate } from '../utils/formatters.js';
 
 
 interface AddTransactionModalProps {

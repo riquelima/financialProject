@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import { AppProvider } from './hooks/useAppContext';
-import ErrorBoundary from './ErrorBoundary'; // Importar o ErrorBoundary
+import App from './App.js';
+import { AppProvider } from './hooks/useAppContext.js';
+import ErrorBoundary from './ErrorBoundary.js'; // Importar o ErrorBoundary
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

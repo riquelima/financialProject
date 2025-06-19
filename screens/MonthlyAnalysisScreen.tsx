@@ -1,10 +1,10 @@
 import React from 'react';
-import { useAppContext } from '../hooks/useAppContext';
-import { getMonthName, formatCurrency } from '../utils/formatters';
-import MonthNavigator from '../components/MonthNavigator';
-import SummaryCard from '../components/SummaryCard';
-import { TargetIcon, TrendingUpIcon, TrendingDownIcon, COLORS, AlertTriangleIcon } from '../constants';
-import { EXPENSE_CATEGORIES } from '../types';
+import { useAppContext } from '../hooks/useAppContext.js';
+import { getMonthName, formatCurrency } from '../utils/formatters.js';
+import MonthNavigator from '../components/MonthNavigator.js';
+import SummaryCard from '../components/SummaryCard.js';
+import { TargetIcon, TrendingUpIcon, TrendingDownIcon, COLORS, AlertTriangleIcon } from '../constants.js';
+import { EXPENSE_CATEGORIES } from '../types.js';
 
 const MonthlyAnalysisScreen: React.FC = () => {
   const { 

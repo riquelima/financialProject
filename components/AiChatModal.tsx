@@ -1,9 +1,8 @@
 
 
-
 import React, { useState, useEffect, useRef } from 'react';
-import { XIcon, SendIcon, RobotIcon, COLORS } from '../constants';
-import { Transaction, TransactionType } from '../types'; 
+import { XIcon, SendIcon, RobotIcon, COLORS } from '../constants.js';
+import { Transaction, TransactionType } from '../types.js'; 
 
 interface FinancialContext {
   currentMonthData?: {

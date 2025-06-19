@@ -1,10 +1,9 @@
 
 
-
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../hooks/useAppContext';
-import { CogIcon, COLORS } from '../constants';
-import { getMonthName } from '../utils/formatters';
+import { useAppContext } from '../hooks/useAppContext.js';
+import { CogIcon, COLORS } from '../constants.js';
+import { getMonthName } from '../utils/formatters.js';
 
 const SettingsScreen: React.FC = () => {
   const { settings, updateSettings, activeMonthYear, updateMonthData, getCurrentMonthData, logout, currentUsername } = useAppContext();

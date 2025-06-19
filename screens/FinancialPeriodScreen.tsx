@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAppContext } from '../hooks/useAppContext';
-import { PeriodType, Transaction, TransactionType } from '../types';
-import AddTransactionModal from '../components/AddTransactionModal';
-import FloatingActionButton from '../components/FloatingActionButton';
-import MonthNavigator from '../components/MonthNavigator';
-import { formatCurrency } from '../utils/formatters';
-import { PlusIcon, COLORS, CalendarIcon, TrendingUpIcon, TrendingDownIcon, DollarSignIcon, TargetIcon } from '../constants';
+import { useAppContext } from '../hooks/useAppContext.js';
+import { PeriodType, Transaction, TransactionType } from '../types.js';
+import AddTransactionModal from '../components/AddTransactionModal.js';
+import FloatingActionButton from '../components/FloatingActionButton.js';
+import MonthNavigator from '../components/MonthNavigator.js';
+import { formatCurrency } from '../utils/formatters.js';
+import { PlusIcon, COLORS, CalendarIcon, TrendingUpIcon, TrendingDownIcon, DollarSignIcon, TargetIcon } from '../constants.js';
 
 interface FinancialPeriodScreenProps {
   // initialPeriodType is used to set the default tab when the screen loads

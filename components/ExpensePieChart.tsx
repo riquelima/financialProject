@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { Transaction, TransactionType } from '../types';
-import { formatCurrency } from '../utils/formatters';
-import { COLORS, PIE_CHART_COLORS, PieChartIcon } from '../constants';
+import { Transaction, TransactionType } from '../types.js';
+import { formatCurrency } from '../utils/formatters.js';
+import { COLORS, PIE_CHART_COLORS, PieChartIcon } from '../constants.js';
 
 interface ExpensePieChartProps {
   expenseTransactions: Transaction[];
