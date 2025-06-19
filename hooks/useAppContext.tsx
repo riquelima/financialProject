@@ -610,16 +610,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const getMonthlySummary = useCallback((monthYear: string) => {
     const monthDataToUse = appState.data[monthYear] || createEmptyMonthDataStructure(monthYear, appState.currentUser || undefined);
-    const allIncome = getAllTransactionsForMonth(monthYear, TransactionType.INCOME);
-    const allExpenses = getAllTransactionsForMonth(monthYear, TransactionType.EXPENSE);
-    const totalIncome = allIncome.reduce((sum, t: Transaction) => sum + t.amount, 0);
-    const totalExpenses = allExpenses.reduce((sum, t: Transaction) => sum + t.amount, 0);
+    
+    const allMonthIncome = getAllTransactionsForMonth(monthYear, TransactionType.INCOME);
+    const allMonthExpenses = getAllTransactionsForMonth(monthYear, TransactionType.EXPENSE);
+
+    // Calculate totalIncome and totalExpenses based on ALL transactions for the month (for summary display)
+    const totalIncome = allMonthIncome.reduce((sum, t: Transaction) => sum + t.amount, 0);
+    const totalExpenses = allMonthExpenses.reduce((sum, t: Transaction) => sum + t.amount, 0);
     const netSavings = totalIncome - totalExpenses;
-    const accountBalance = (monthDataToUse.openingBalance || 0) + netSavings;
-    const creditCardSpent = allExpenses.filter((t: Transaction) => t.category === "Cartão de Crédito").reduce((sum, t: Transaction) => sum + t.amount, 0);
+
+    // Calculate accountBalance dynamically
+    let dynamicAccountBalance = monthDataToUse.openingBalance || 0;
+    const today = new Date();
+    // Set hours, minutes, seconds, and milliseconds to 0 for date-only comparison
+    today.setHours(0, 0, 0, 0); 
+
+    allMonthIncome.forEach((incomeTx: Transaction) => {
+      const txDateParts = incomeTx.date.split('-').map(Number);
+      const transactionDate = new Date(Date.UTC(txDateParts[0], txDateParts[1] - 1, txDateParts[2]));
+      
+      if (transactionDate.getTime() <= today.getTime()) {
+        dynamicAccountBalance += incomeTx.amount;
+      }
+    });
+
+    allMonthExpenses.forEach((expenseTx: Transaction) => {
+      const txDateParts = expenseTx.date.split('-').map(Number);
+      const transactionDate = new Date(Date.UTC(txDateParts[0], txDateParts[1] - 1, txDateParts[2]));
+      
+      if (transactionDate.getTime() <= today.getTime()) {
+        dynamicAccountBalance -= expenseTx.amount;
+      }
+    });
+
+    const creditCardSpent = allMonthExpenses.filter((t: Transaction) => t.category === "Cartão de Crédito").reduce((sum, t: Transaction) => sum + t.amount, 0);
     const creditCardRemainingLimit = monthDataToUse.creditCardLimit !== undefined && monthDataToUse.creditCardLimit !== null ? monthDataToUse.creditCardLimit - creditCardSpent : undefined;
-    const totalBenefits = allIncome.filter((t: Transaction) => BENEFIT_CATEGORIES.includes(t.category)).reduce((sum, t: Transaction) => sum + t.amount, 0);
-    return { totalIncome, totalExpenses, netSavings, accountBalance, creditCardSpent, creditCardRemainingLimit, totalBenefits };
+    const totalBenefits = allMonthIncome.filter((t: Transaction) => BENEFIT_CATEGORIES.includes(t.category)).reduce((sum, t: Transaction) => sum + t.amount, 0);
+    
+    return { 
+      totalIncome, 
+      totalExpenses, 
+      netSavings, 
+      accountBalance: dynamicAccountBalance, 
+      creditCardSpent, 
+      creditCardRemainingLimit, 
+      totalBenefits 
+    };
   }, [appState.data, appState.currentUser, getAllTransactionsForMonth]);
 
 
